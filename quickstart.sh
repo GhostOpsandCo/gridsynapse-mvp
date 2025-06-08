@@ -31,11 +31,10 @@ check_command git
 
 echo "✅ All prerequisites installed!"
 
-# Clone repository if not already in it
+# Check if we're in the right directory
 if [ ! -f "docker-compose.yml" ]; then
-    echo "📦 Cloning GridSynapse repository..."
-    git clone https://github.com/gridsynapse/gridsynapse-mvp.git
-    cd gridsynapse-mvp
+    echo "❌ docker-compose.yml not found. Please run this script from the GridSynapse project root."
+    exit 1
 fi
 
 # Create necessary directories

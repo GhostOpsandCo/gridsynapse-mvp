@@ -46,9 +46,9 @@ services:
     image: postgres:15-alpine
     container_name: gridsynapse-postgres
     environment:
-      - POSTGRES_USER=gridsynapse
-      - POSTGRES_PASSWORD=gridsynapse
-      - POSTGRES_DB=gridsynapse
+      - POSTGRES_USER=${POSTGRES_USER:-gridsynapse}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-gridsynapse}
+      - POSTGRES_DB=${POSTGRES_DB:-gridsynapse}
     ports:
       - "5432:5432"
     volumes:
@@ -84,7 +84,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana

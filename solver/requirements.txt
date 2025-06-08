@@ -1,0 +1,5 @@
+ortools==9.8.3296
+numpy==1.26.2
+pandas==2.1.4
+redis==5.0.1
+pydantic==2.5.0
