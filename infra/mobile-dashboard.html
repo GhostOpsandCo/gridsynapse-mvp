@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>GridSynapse Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .container {
+            max-width: 100vw;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+        }
+        
+        .header {
+            padding: 2rem 1.5rem 1.5rem;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00ff88, #00ffdd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tagline {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+        
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 68, 68, 0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            border: 1px solid #ff4444;
+            font-size: 0.8rem;
+            animation: pulse 2s infinite;
+        }
+        
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #ff4444;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .metric-card.active {
+            transform: scale(0.98);
+            border-color: #00ff88;
+        }
+        
+        .metric-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: #888;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .metric-value.green { color: #00ff88; }
+        .metric-value.blue { color: #00ddff; }
+        .metric-value.yellow { color: #ffdd00; }
+        .metric-value.red { color: #ff4444; }
+        
+        .activity-section {
+            padding: 0 1.5rem 1.5rem;
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #00ff88;
+        }
+        
+        .activity-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .activity-icon.migration { background: #00ff88; color: #000; }
+        .activity-icon.job { background: #00ddff; color: #000; }
+        .activity-icon.alert { background: #ff4444; color: #fff; }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-title {
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+        
+        .activity-time {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        
+        .bottom-section {
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .total-saved {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .total-saved-label {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+        
+        .total-saved-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        
+        .cta-button {
+            display: block;
+            width: 100%;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, #00ff88 0%, #00ffdd 100%);
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .cta-button:active {
+            transform: scale(0.98);
+        }
+        
+        /* iPhone X safe areas */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            .header {
+                padding-top: calc(2rem + env(safe-area-inset-top));
+            }
+            .bottom-section {
+                padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">GridSynapse</div>
+            <div class="tagline">AI Infrastructure Nervous System</div>
+            <div class="live-badge">
+                <span class="live-dot"></span>
+                <span>LIVE OPERATIONS</span>
+            </div>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card" onclick="this.classList.add('active'); setTimeout(() => this.classList.remove('active'), 200)">
+                <div class="metric-icon">🚀</div>
+                <div class="metric-value green" id="activeJobs">847</div>
+                <div class="metric-label">Active Jobs</div>
+            </div>
+            
+            <div class="metric-card" onclick="this.classList.add('active'); setTimeout(() => this.classList.remove('active'), 200)">
+                <div class="metric-icon">💻</div>
+                <div class="metric-value blue" id="totalGPUs">12.4K</div>
+                <div class="metric-label">GPUs Online</div>
+            </div>
+            
+            <div class="metric-card" onclick="this.classList.add('active'); setTimeout(() => this.classList.remove('active'), 200)">
+                <div class="metric-icon">🌱</div>
+                <div class="metric-value yellow" id="carbonSaved">156</div>
+                <div class="metric-label">Tons CO₂ Saved</div>
+            </div>
+            
+            <div class="metric-card" onclick="this.classList.add('active'); setTimeout(() => this.classList.remove('active'), 200)">
+                <div class="metric-icon">⚡</div>
+                <div class="metric-value red" id="latency">12ms</div>
+                <div class="metric-label">Avg Latency</div>
+            </div>
+        </div>
+        
+        <div class="activity-section">
+            <h2 class="section-title">Live Activity</h2>
+            <div id="activityFeed">
+                <div class="activity-card">
+                    <div class="activity-icon migration">🔄</div>
+                    <div class="activity-content">
+                        <div class="activity-title">Job migrated: CA → WY</div>
+                        <div class="activity-time">Carbon reduced by 82%</div>
+                    </div>
+                </div>
+                
+                <div class="activity-card">
+                    <div class="activity-icon job">🚀</div>
+                    <div class="activity-content">
+                        <div class="activity-title">New job: LLM Training</div>
+                        <div class="activity-time">8,192 GPUs allocated</div>
+                    </div>
+                </div>
+                
+                <div class="activity-card">
+                    <div class="activity-icon alert">⚡</div>
+                    <div class="activity-content">
+                        <div class="activity-title">Grid optimization</div>
+                        <div class="activity-time">Saved $1,247 in last hour</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bottom-section">
+            <div class="total-saved">
+                <div class="total-saved-label">Total Saved Today</div>
+                <div class="total-saved-value">$<span id="totalSaved">284,795</span></div>
+            </div>
+            
+            <button class="cta-button">View Full Dashboard</button>
+        </div>
+    </div>
+    
+    <script>
+        // Animate counters
+        function animateValue(id, start, end, duration) {
+            const element = document.getElementById(id);
+            const increment = (end - start) / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= end) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                
+                if (id === 'totalGPUs') {
+                    element.textContent = (current / 1000).toFixed(1) + 'K';
+                } else if (id === 'totalSaved') {
+                    element.textContent = Math.floor(current).toLocaleString();
+                } else if (id === 'latency') {
+                    element.textContent = Math.floor(current) + 'ms';
+                } else {
+                    element.textContent = Math.floor(current);
+                }
+            }, 16);
+        }
+        
+        // Initialize animations
+        setTimeout(() => {
+            animateValue('activeJobs', 0, 847, 2000);
+            animateValue('totalGPUs', 0, 12400, 2500);
+            animateValue('carbonSaved', 0, 156, 2000);
+            animateValue('latency', 0, 12, 1500);
+            animateValue('totalSaved', 200000, 284795, 3000);
+        }, 500);
+        
+        // Update metrics periodically
+        setInterval(() => {
+            const jobs = parseInt(document.getElementById('activeJobs').textContent);
+            document.getElementById('activeJobs').textContent = jobs + Math.floor(Math.random() * 5 - 2);
+            
+            const saved = parseInt(document.getElementById('totalSaved').textContent.replace(/,/g, ''));
+            document.getElementById('totalSaved').textContent = (saved + Math.floor(Math.random() * 100)).toLocaleString();
+        }, 3000);
+        
+        // Handle CTA button click
+        document.querySelector('.cta-button').addEventListener('click', () => {
+            window.location.href = '/dashboard-v2.html';
+        });
+        
+        // Add touch feedback
+        document.querySelectorAll('.metric-card').forEach(card => {
+            card.addEventListener('touchstart', () => card.classList.add('active'));
+            card.addEventListener('touchend', () => setTimeout(() => card.classList.remove('active'), 200));
+        });
+    </script>
+</body>
+</html>

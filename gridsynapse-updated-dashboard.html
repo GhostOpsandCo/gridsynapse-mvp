@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GridSynapse Operations Center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 2px 30px rgba(0,102,204,0.3);
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+        
+        .tagline {
+            font-size: 1.3em;
+            color: rgba(255,255,255,0.9);
+            font-weight: 300;
+        }
+        
+        .live-indicator {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: #34C759;
+            color: #000;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+            font-size: 14px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.98); }
+        }
+        
+        .total-savings {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .total-savings span {
+            color: #34C759;
+            font-size: 24px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #34C759, #30D158);
+            transform: scaleX(0);
+            animation: loadBar 2s ease-out forwards;
+        }
+        
+        @keyframes loadBar {
+            to { transform: scaleX(1); }
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(52,199,89,0.2);
+            border-color: rgba(52,199,89,0.3);
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .metric-value {
+            font-size: 3em;
+            font-weight: 700;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #34C759, #30D158);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+        
+        .metric-change {
+            font-size: 14px;
+            color: #34C759;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .metric-negative {
+            color: #FF3B30;
+        }
+        
+        .real-time-feed {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 40px 40px;
+        }
+        
+        .feed-header {
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feed-container {
+            background: rgba(255,255,255,0.03);
+            border-radius: 20px;
+            padding: 20px;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .feed-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .feed-item-content {
+            flex: 1;
+        }
+        
+        .feed-timestamp {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .data-center-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            padding: 0 40px 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .dc-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .dc-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .dc-status-indicator {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 12px;
+            height: 12px;
+            background: #34C759;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(52,199,89,0.5);
+        }
+        
+        .dc-status-indicator.warning {
+            background: #FF9500;
+            box-shadow: 0 0 10px rgba(255,149,0,0.5);
+        }
+        
+        .dc-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #64B5F6;
+        }
+        
+        .dc-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .dc-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dc-stat-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+        }
+        
+        .dc-stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .alert-banner {
+            background: linear-gradient(90deg, #FF9500, #FF3B30);
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            transform: translateY(-100%);
+            transition: transform 0.3s;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        
+        .alert-banner.show {
+            transform: translateY(0);
+        }
+        
+        .partner-earnings {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 40px 40px;
+        }
+        
+        .partner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .partner-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .partner-name {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 10px;
+        }
+        
+        .partner-earnings {
+            font-size: 28px;
+            font-weight: 700;
+            color: #34C759;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="alert-banner" id="alertBanner">
+        🚨 New optimization record: Job completed with 91% carbon reduction!
+    </div>
+    
+    <div class="header">
+        <div class="total-savings">Total Saved: <span id="totalSaved">$47,823</span></div>
+        <div class="live-indicator">● LIVE</div>
+        <h1>GridSynapse Operations Center</h1>
+        <p class="tagline">The Nervous System for America's AI Revolution 🇺🇸</p>
+    </div>
+    
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-label">Active GPU Nodes</div>
+            <div class="metric-value" id="activeNodes">2,847</div>
+            <div class="metric-change">
+                <span>↑</span> 12% from yesterday
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-label">Jobs Processing</div>
+            <div class="metric-value" id="jobsProcessing">147</div>
+            <div class="metric-change">
+                <span>→</span> 23 jobs/minute
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-label">Carbon Saved Today</div>
+            <div class="metric-value" id="carbonSaved">4.2t</div>
+            <div class="metric-change">
+                <span>↓</span> 67% vs baseline
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-label">Cost Savings Rate</div>
+            <div class="metric-value" id="savingsRate">$892</div>
+            <div class="metric-change">
+                <span>→</span> per minute
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-label">Solver Latency</div>
+            <div class="metric-value" id="solverLatency">87ms</div>
+            <div class="metric-change">
+                <span>✓</span> Target: <100ms
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-label">Network Uptime</div>
+            <div class="metric-value">99.99%</div>
+            <div class="metric-change">
+                <span>✓</span> 0 incidents today
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-label">Migration Success</div>
+            <div class="metric-value" id="migrationRate">98.7%</div>
+            <div class="metric-change">
+                <span>↑</span> 147 migrations today
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-label">Partner Revenue</div>
+            <div class="metric-value" id="partnerRevenue">$128k</div>
+            <div class="metric-change">
+                <span>↑</span> Generated today
+            </div>
+        </div>
+    </div>
+    
+    <div class="real-time-feed">
+        <h2 class="feed-header">
+            <span>🔄</span> Real-Time Activity Feed
+        </h2>
+        <div class="feed-container" id="activityFeed">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+    
+    <div class="data-center-grid">
+        <div class="dc-card">
+            <div class="dc-status-indicator"></div>
+            <div class="dc-name">DC-WEST-1 (California)</div>
+            <div class="dc-stats">
+                <div class="dc-stat">
+                    <span class="dc-stat-label">GPU Utilization</span>
+                    <span class="dc-stat-value">487/600 (81%)</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Carbon Intensity</span>
+                    <span class="dc-stat-value">145 gCO₂/kWh</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Current Load</span>
+                    <span class="dc-stat-value">8.7 MW</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Price</span>
+                    <span class="dc-stat-value">$2.85/GPU-hr</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dc-card">
+            <div class="dc-status-indicator"></div>
+            <div class="dc-name">DC-EAST-1 (Virginia)</div>
+            <div class="dc-stats">
+                <div class="dc-stat">
+                    <span class="dc-stat-label">GPU Utilization</span>
+                    <span class="dc-stat-value">623/800 (78%)</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Carbon Intensity</span>
+                    <span class="dc-stat-value">78 gCO₂/kWh</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Current Load</span>
+                    <span class="dc-stat-value">9.4 MW</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Price</span>
+                    <span class="dc-stat-value">$2.20/GPU-hr</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dc-card">
+            <div class="dc-status-indicator"></div>
+            <div class="dc-name">DC-NORTH-1 (Wyoming)</div>
+            <div class="dc-stats">
+                <div class="dc-stat">
+                    <span class="dc-stat-label">GPU Utilization</span>
+                    <span class="dc-stat-value">892/1000 (89%)</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Carbon Intensity</span>
+                    <span class="dc-stat-value">45 gCO₂/kWh</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Current Load</span>
+                    <span class="dc-stat-value">13.4 MW</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Price</span>
+                    <span class="dc-stat-value">$1.95/GPU-hr</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dc-card">
+            <div class="dc-status-indicator warning"></div>
+            <div class="dc-name">DC-CENTRAL-1 (Texas)</div>
+            <div class="dc-stats">
+                <div class="dc-stat">
+                    <span class="dc-stat-label">GPU Utilization</span>
+                    <span class="dc-stat-value">215/400 (54%)</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Carbon Intensity</span>
+                    <span class="dc-stat-value">92 gCO₂/kWh</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Current Load</span>
+                    <span class="dc-stat-value">3.2 MW</span>
+                </div>
+                <div class="dc-stat">
+                    <span class="dc-stat-label">Price</span>
+                    <span class="dc-stat-value">$2.45/GPU-hr</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="partner-earnings">
+        <h2 class="feed-header">
+            <span>💰</span> Partner Earnings (Live)
+        </h2>
+        <div class="partner-grid">
+            <div class="partner-card">
+                <div class="partner-name">California DC Partners</div>
+                <div class="partner-earnings" id="partnerCA">$12,847</div>
+            </div>
+            <div class="partner-card">
+                <div class="partner-name">Virginia DC Partners</div>
+                <div class="partner-earnings" id="partnerVA">$15,923</div>
+            </div>
+            <div class="partner-card">
+                <div class="partner-name">Wyoming DC Partners</div>
+                <div class="partner-earnings" id="partnerWY">$21,455</div>
+            </div>
+            <div class="partner-card">
+                <div class="partner-name">Texas DC Partners</div>
+                <div class="partner-earnings" id="partnerTX">$7,234</div>
+            </div>
+            <div class="partner-card">
+                <div class="partner-name">PG&E (Utility)</div>
+                <div class="partner-earnings" id="partnerPGE">$18,922</div>
+            </div>
+            <div class="partner-card">
+                <div class="partner-name">Dominion Energy</div>
+                <div class="partner-earnings" id="partnerDOM">$14,788</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        GridSynapse - Securing America's AI Future | Real-time data updated every 100ms
+    </div>
+
+    <script>
+        // Initialize counters
+        let totalSaved = 47823;
+        let activeNodes = 2847;
+        let jobsProcessing = 147;
+        let carbonSaved = 4.2;
+        let savingsPerSecond = 0.92;
+        let partnerEarnings = {
+            CA: 12847,
+            VA: 15923,
+            WY: 21455,
+            TX: 7234,
+            PGE: 18922,
+            DOM: 14788
+        };
+        
+        // Activity feed messages
+        const activities = [
+            { type: 'job', message: 'Job #A2847 optimized: 34% cost reduction, routing to Wyoming DC' },
+            { type: 'migration', message: 'Live migration completed: CA → WY, carbon reduced by 69%' },
+            { type: 'partner', message: 'New partner onboarded: Austin Energy (500 MW capacity)' },
+            { type: 'carbon', message: 'Carbon alert: California grid at 245 gCO₂/kWh, redirecting workloads' },
+            { type: 'optimization', message: 'Solver optimization: 4,287 configurations evaluated in 92ms' },
+            { type: 'savings', message: 'Customer AlertAI saved $3,847 in the last hour' },
+            { type: 'capacity', message: 'Wyoming DC expanded: +200 H100 GPUs now online' },
+            { type: 'sla', message: 'SLA achievement: 99.99% uptime maintained for all critical workloads' }
+        ];
+        
+        // Update total savings counter
+        setInterval(() => {
+            totalSaved += savingsPerSecond;
+            document.getElementById('totalSaved').textContent = '$' + Math.floor(totalSaved).toLocaleString();
+        }, 1000);
+        
+        // Update metrics
+        setInterval(() => {
+            // Active nodes
+            activeNodes += Math.floor(Math.random() * 10 - 3);
+            document.getElementById('activeNodes').textContent = activeNodes.toLocaleString();
+            
+            // Jobs processing
+            jobsProcessing = Math.max(100, jobsProcessing + Math.floor(Math.random() * 20 - 10));
+            document.getElementById('jobsProcessing').textContent = jobsProcessing;
+            
+            // Carbon saved
+            carbonSaved += 0.1;
+            document.getElementById('carbonSaved').textContent = carbonSaved.toFixed(1) + 't';
+            
+            // Solver latency
+            const latency = 70 + Math.floor(Math.random() * 30);
+            document.getElementById('solverLatency').textContent = latency + 'ms';
+            
+            // Migration rate
+            const migrationRate = 96 + Math.random() * 3;
+            document.getElementById('migrationRate').textContent = migrationRate.toFixed(1) + '%';
+            
+            // Partner revenue
+            const dailyRevenue = 128 + Math.floor(Math.random() * 10);
+            document.getElementById('partnerRevenue').textContent = '$' + dailyRevenue + 'k';
+            
+            // Savings rate
+            const rate = 850 + Math.floor(Math.random() * 100);
+            document.getElementById('savingsRate').textContent = '$' + rate;
+        }, 3000);
+        
+        // Update partner earnings
+        setInterval(() => {
+            Object.keys(partnerEarnings).forEach(partner => {
+                partnerEarnings[partner] += Math.random() * 50;
+                const element = document.getElementById('partner' + partner);
+                if (element) {
+                    element.textContent = '$' + Math.floor(partnerEarnings[partner]).toLocaleString();
+                }
+            });
+        }, 2000);
+        
+        // Add activity feed items
+        function addActivityItem() {
+            const feed = document.getElementById('activityFeed');
+            const activity = activities[Math.floor(Math.random() * activities.length)];
+            const time = new Date().toLocaleTimeString();
+            
+            const item = document.createElement('div');
+            item.className = 'feed-item';
+            item.innerHTML = `
+                <div class="feed-item-content">
+                    <div>${activity.message}</div>
+                    <div class="feed-timestamp">${time}</div>
+                </div>
+            `;
+            
+            feed.insertBefore(item, feed.firstChild);
+            
+            // Keep only last 10 items
+            while (feed.children.length > 10) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+        
+        // Add initial feed items
+        for (let i = 0; i < 5; i++) {
+            addActivityItem();
+        }
+        
+        // Add new feed items periodically
+        setInterval(addActivityItem, 5000);
+        
+        // Show alerts occasionally
+        setInterval(() => {
+            if (Math.random() > 0.9) {
+                const banner = document.getElementById('alertBanner');
+                banner.classList.add('show');
+                setTimeout(() => {
+                    banner.classList.remove('show');
+                }, 5000);
+            }
+        }, 10000);
+        
+        // Animate metric cards on load
+        document.querySelectorAll('.metric-card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.5s ease-out';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    </script>
+</body>
+</html>
