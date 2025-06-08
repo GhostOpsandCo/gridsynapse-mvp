@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir fastapi uvicorn
+
+COPY mock_watttime.py .
+
+CMD ["uvicorn", "mock_watttime:app", "--host", "0.0.0.0", "--port", "8001"]

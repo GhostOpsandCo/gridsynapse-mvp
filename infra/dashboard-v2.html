@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GridSynapse - Live Operations Center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 2px solid #00ff88;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #00ff88, #00ffdd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header .tagline {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+        
+        .header-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 1rem;
+        }
+        
+        .total-saved {
+            font-size: 1.5rem;
+            color: #00ff88;
+        }
+        
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #ff4444;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: #ff4444;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.2);
+        }
+        
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #00ff88;
+        }
+        
+        .metric {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+        
+        .metric.green {
+            color: #00ff88;
+        }
+        
+        .metric.blue {
+            color: #00ddff;
+        }
+        
+        .metric.yellow {
+            color: #ffdd00;
+        }
+        
+        .sub-metric {
+            font-size: 0.9rem;
+            color: #888;
+        }
+        
+        .activity-feed {
+            grid-column: span 3;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem;
+            border-bottom: 1px solid #333;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .activity-icon.migration {
+            background: #00ff88;
+            color: #000;
+        }
+        
+        .activity-icon.job {
+            background: #00ddff;
+            color: #000;
+        }
+        
+        .activity-icon.carbon {
+            background: #ffdd00;
+            color: #000;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-time {
+            color: #666;
+            font-size: 0.8rem;
+        }
+        
+        .partner-grid {
+            grid-column: span 3;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .partner-card {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .partner-name {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        
+        .partner-revenue {
+            font-size: 2rem;
+            color: #00ff88;
+            margin: 0.5rem 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ffdd);
+            transition: width 0.5s ease;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            border-top: 1px solid #333;
+        }
+        
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
+            .activity-feed, .partner-grid {
+                grid-column: span 2;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            .activity-feed, .partner-grid {
+                grid-column: span 1;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .header-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>GridSynapse</h1>
+        <p class="tagline">The Nervous System for America's AI Revolution</p>
+        <div class="header-stats">
+            <div class="total-saved">Total Saved: $<span id="totalSaved">0</span></div>
+            <div class="live-indicator">
+                <span class="live-dot"></span>
+                LIVE
+            </div>
+        </div>
+    </div>
+    
+    <div class="dashboard">
+        <!-- Active Jobs -->
+        <div class="card">
+            <h2>🚀 Active Jobs</h2>
+            <div class="metric green" id="activeJobs">0</div>
+            <div class="sub-metric">AI workloads running</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="jobsProgress" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <!-- Total GPUs -->
+        <div class="card">
+            <h2>💻 Total GPUs</h2>
+            <div class="metric blue" id="totalGPUs">0</div>
+            <div class="sub-metric">Computing units active</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="gpuProgress" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <!-- Carbon Saved -->
+        <div class="card">
+            <h2>🌱 Carbon Saved</h2>
+            <div class="metric yellow" id="carbonSaved">0</div>
+            <div class="sub-metric">tons CO₂ today</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="carbonProgress" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <!-- Cost Savings -->
+        <div class="card">
+            <h2>💰 Cost Savings Rate</h2>
+            <div class="metric green">$<span id="savingsRate">0</span>/hr</div>
+            <div class="sub-metric">vs traditional cloud</div>
+        </div>
+        
+        <!-- Network Latency -->
+        <div class="card">
+            <h2>⚡ Network Latency</h2>
+            <div class="metric blue"><span id="latency">0</span>ms</div>
+            <div class="sub-metric">avg response time</div>
+        </div>
+        
+        <!-- System Uptime -->
+        <div class="card">
+            <h2>✅ System Uptime</h2>
+            <div class="metric yellow">99.99%</div>
+            <div class="sub-metric">SLA guaranteed</div>
+        </div>
+        
+        <!-- Live Activity Feed -->
+        <div class="card activity-feed">
+            <h2>📊 Live Activity Feed</h2>
+            <div id="activityFeed"></div>
+        </div>
+        
+        <!-- Partner Earnings Dashboard -->
+        <div class="card" style="grid-column: span 3;">
+            <h2>💵 Partner Earnings Dashboard</h2>
+            <div class="partner-grid" id="partnerGrid"></div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>GridSynapse © 2024 | Powering America's AI Future 🇺🇸</p>
+    </div>
+    
+    <script>
+        // Counter animation
+        function animateCounter(id, start, end, duration, prefix = '', suffix = '') {
+            const element = document.getElementById(id);
+            const increment = (end - start) / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= end) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = prefix + Math.floor(current).toLocaleString() + suffix;
+            }, 16);
+        }
+        
+        // Initialize metrics
+        setTimeout(() => {
+            animateCounter('activeJobs', 0, 847, 2000);
+            animateCounter('totalGPUs', 0, 12384, 2500);
+            animateCounter('carbonSaved', 0, 156, 2000);
+            animateCounter('savingsRate', 0, 4827, 2000);
+            animateCounter('latency', 0, 12, 1500);
+            animateCounter('totalSaved', 0, 2847956, 3000);
+            
+            // Animate progress bars
+            document.getElementById('jobsProgress').style.width = '87%';
+            document.getElementById('gpuProgress').style.width = '92%';
+            document.getElementById('carbonProgress').style.width = '78%';
+        }, 500);
+        
+        // Activity feed items
+        const activities = [
+            { type: 'migration', icon: '🔄', text: 'Job #LLM-847 migrated CA → WY (carbon -82%)', time: 'just now' },
+            { type: 'job', icon: '🚀', text: 'New training job: GPT-5 fine-tuning (8,192 GPUs)', time: '2 min ago' },
+            { type: 'carbon', icon: '🌱', text: 'Carbon alert cleared: Oregon grid now 45 gCO₂/kWh', time: '5 min ago' },
+            { type: 'job', icon: '✅', text: 'Job #INF-234 completed: 4.2M tokens processed', time: '8 min ago' },
+            { type: 'migration', icon: '⚡', text: 'Emergency migration: 2,048 GPUs moved in 47ms', time: '12 min ago' },
+            { type: 'carbon', icon: '📊', text: 'Daily record: 178 tons CO₂ saved', time: '15 min ago' }
+        ];
+        
+        // Populate activity feed
+        const feedContainer = document.getElementById('activityFeed');
+        activities.forEach((activity, index) => {
+            setTimeout(() => {
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                item.innerHTML = `
+                    <div class="activity-icon ${activity.type}">${activity.icon}</div>
+                    <div class="activity-content">
+                        <div>${activity.text}</div>
+                        <div class="activity-time">${activity.time}</div>
+                    </div>
+                `;
+                feedContainer.prepend(item);
+            }, index * 300);
+        });
+        
+        // Partner data
+        const partners = [
+            { name: 'Wyoming Wind Farm DC', revenue: 12847, utilization: 87 },
+            { name: 'Oregon Hydro Center', revenue: 15234, utilization: 92 },
+            { name: 'Texas Solar Complex', revenue: 9876, utilization: 79 }
+        ];
+        
+        // Populate partner grid
+        const partnerGrid = document.getElementById('partnerGrid');
+        partners.forEach((partner, index) => {
+            setTimeout(() => {
+                const card = document.createElement('div');
+                card.className = 'partner-card';
+                card.innerHTML = `
+                    <div class="partner-name">${partner.name}</div>
+                    <div class="partner-revenue">$${partner.revenue.toLocaleString()}</div>
+                    <div class="sub-metric">earned today</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${partner.utilization}%"></div>
+                    </div>
+                    <div class="sub-metric">${partner.utilization}% utilization</div>
+                `;
+                partnerGrid.appendChild(card);
+            }, index * 400);
+        });
+        
+        // Simulate live updates
+        setInterval(() => {
+            // Update random metrics
+            const jobs = parseInt(document.getElementById('activeJobs').textContent);
+            document.getElementById('activeJobs').textContent = jobs + Math.floor(Math.random() * 3 - 1);
+            
+            const latency = 12 + Math.floor(Math.random() * 4 - 2);
+            document.getElementById('latency').textContent = latency;
+            
+            const savings = parseInt(document.getElementById('savingsRate').textContent.replace(',', ''));
+            document.getElementById('savingsRate').textContent = (savings + Math.floor(Math.random() * 50 - 20)).toLocaleString();
+        }, 3000);
+        
+        // Add new activity item every 10 seconds
+        setInterval(() => {
+            const newActivities = [
+                { type: 'migration', icon: '🔄', text: `Job migrated: cost -${Math.floor(Math.random() * 40 + 20)}%` },
+                { type: 'job', icon: '🚀', text: `New job: ${Math.floor(Math.random() * 1000 + 100)} GPUs requested` },
+                { type: 'carbon', icon: '🌱', text: `Carbon optimized: -${Math.floor(Math.random() * 30 + 50)} gCO₂/kWh` }
+            ];
+            
+            const activity = newActivities[Math.floor(Math.random() * newActivities.length)];
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `
+                <div class="activity-icon ${activity.type}">${activity.icon}</div>
+                <div class="activity-content">
+                    <div>${activity.text}</div>
+                    <div class="activity-time">just now</div>
+                </div>
+            `;
+            feedContainer.prepend(item);
+            
+            // Remove old items
+            while (feedContainer.children.length > 10) {
+                feedContainer.removeChild(feedContainer.lastChild);
+            }
+        }, 10000);
+    </script>
+</body>
+</html>
