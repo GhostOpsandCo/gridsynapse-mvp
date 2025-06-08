@@ -1,0 +1,131 @@
+# GridSynapse MVP - Docker Compose Configuration
+# Quick start: docker-compose up
+
+version: '3.8'
+
+services:
+  # Core API Service
+  api:
+    build: 
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: gridsynapse-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://gridsynapse:gridsynapse@postgres:5432/gridsynapse
+      - REDIS_URL=redis://redis:6379
+      - WATTTIME_API_KEY=${WATTTIME_API_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-secret-key-change-in-production}
+      - PROMETHEUS_ENABLED=true
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./api:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Optimization Solver Service
+  solver:
+    build:
+      context: ./solver
+      dockerfile: Dockerfile
+    container_name: gridsynapse-solver
+    environment:
+      - SOLVER_TIMEOUT_MS=100
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    volumes:
+      - ./solver:/app
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: gridsynapse-postgres
+    environment:
+      - POSTGRES_USER=gridsynapse
+      - POSTGRES_PASSWORD=gridsynapse
+      - POSTGRES_DB=gridsynapse
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Redis for caching and job queues
+  redis:
+    image: redis:7-alpine
+    container_name: gridsynapse-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: gridsynapse-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: gridsynapse-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./infra/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+
+  # Minikube for local K8s testing
+  # Note: For local development, you might run Minikube separately
+  # This is just for reference
+  
+  # Mock services for development
+  mock-watttime:
+    build:
+      context: ./tests/mocks
+      dockerfile: Dockerfile.watttime
+    container_name: gridsynapse-mock-watttime
+    ports:
+      - "8001:8001"
+    environment:
+      - MOCK_CARBON_INTENSITY=120.5
+
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: gridsynapse-otel
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./infra/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: gridsynapse-network
