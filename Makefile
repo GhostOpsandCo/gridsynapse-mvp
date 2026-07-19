@@ -1,7 +1,8 @@
 # GridSynapse MVP - Development Makefile
 # Quick commands for development and deployment
 
-.PHONY: help install dev test clean docker-up docker-down deploy-local docs
+.PHONY: help install dev test clean docker-up docker-down deploy-local docs \
+	v2-install v2-api v2-web v2-test v2-build v2-benchmark v2-check v2-docker-up v2-docker-down
 
 # Default target
 help:
@@ -14,6 +15,49 @@ help:
 	@echo "  make k8s-local    - Deploy to local Minikube"
 	@echo "  make clean        - Clean up generated files"
 	@echo "  make docs         - Generate API documentation"
+	@echo "  make v2-install   - Install the v2 Python and web dependencies"
+	@echo "  make v2-api       - Run the v2 FastAPI service on port 8080"
+	@echo "  make v2-web       - Run the v2 operator console on port 3020"
+	@echo "  make v2-check     - Run all v2 quality, test, build, and benchmark gates"
+	@echo "  make v2-docker-up - Run the isolated v2 stack with Docker Compose"
+
+# GridSynapse v2 commands are isolated from the legacy MVP targets above.
+V2_PYTHONPATH=packages/contracts:packages/optimizer:packages/adapters:packages/explanations:services/api
+V2_VENV?=.venv
+
+v2-install:
+	python3 -m venv $(V2_VENV)
+	$(V2_VENV)/bin/python -m pip install --upgrade pip
+	$(V2_VENV)/bin/python -m pip install -e ".[dev]"
+	cd apps/web && npm ci
+
+v2-api:
+	PYTHONPATH=$(V2_PYTHONPATH) $(V2_VENV)/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080 --reload
+
+v2-web:
+	cd apps/web && npm run dev
+
+v2-test:
+	$(V2_VENV)/bin/pytest
+
+v2-build:
+	cd apps/web && npm run typecheck && npm run build
+
+v2-benchmark:
+	$(V2_VENV)/bin/python scripts/run_benchmark.py
+
+v2-check:
+	$(V2_VENV)/bin/ruff format --check packages services tests/v2 scripts
+	$(V2_VENV)/bin/ruff check packages services tests/v2 scripts
+	$(V2_VENV)/bin/pytest
+	cd apps/web && npm run typecheck && npm run build
+	$(V2_VENV)/bin/python scripts/run_benchmark.py --iterations 5 --warmups 1
+
+v2-docker-up:
+	docker compose -f docker-compose.v2.yml up --build
+
+v2-docker-down:
+	docker compose -f docker-compose.v2.yml down
 
 # Install dependencies
 install:

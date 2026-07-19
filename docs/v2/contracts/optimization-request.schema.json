@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gridsynapse.io/schemas/v2/optimization-request.schema.json",
+  "title": "GridSynapse Optimization Request v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scenarioId",
+    "horizon",
+    "policy",
+    "workloads",
+    "resourcePools"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "gridsynapse-optimization-request-v2"},
+    "scenarioId": {"type": "string", "minLength": 1},
+    "horizon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "slotMinutes"],
+      "properties": {
+        "start": {"type": "string", "format": "date-time"},
+        "end": {"type": "string", "format": "date-time"},
+        "slotMinutes": {"type": "integer", "enum": [15, 30, 60]}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "weights", "maxSolverSeconds"],
+      "properties": {
+        "profile": {"type": "string", "enum": ["cost", "balanced", "carbon", "sla"]},
+        "weights": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["costBps", "carbonBps", "delayBps", "riskBps"],
+          "properties": {
+            "costBps": {"type": "integer", "minimum": 0, "maximum": 10000},
+            "carbonBps": {"type": "integer", "minimum": 0, "maximum": 10000},
+            "delayBps": {"type": "integer", "minimum": 0, "maximum": 10000},
+            "riskBps": {"type": "integer", "minimum": 0, "maximum": 10000}
+          }
+        },
+        "maxSolverSeconds": {"type": "integer", "minimum": 1, "maximum": 60}
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/workload"}
+    },
+    "resourcePools": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/resourcePool"}
+    }
+  },
+  "$defs": {
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "sourceType", "observedAt", "unit", "freshnessSeconds", "confidence"],
+      "properties": {
+        "sourceId": {"type": "string"},
+        "sourceType": {"type": "string", "enum": ["observed", "contract", "public_snapshot", "estimated", "synthetic"]},
+        "sourceUrl": {"type": ["string", "null"], "format": "uri"},
+        "observedAt": {"type": "string", "format": "date-time"},
+        "unit": {"type": "string"},
+        "freshnessSeconds": {"type": "integer", "minimum": 0},
+        "confidence": {"type": "string", "enum": ["high", "medium", "low"]}
+      }
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "workloadType", "gpuType", "gpuCount", "durationMinutes", "earliestStart", "deadline", "priority", "interruptible", "checkpointable", "allowedRegions"],
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "workloadType": {"type": "string", "enum": ["training", "fine_tuning", "embeddings", "batch_inference"]},
+        "gpuType": {"type": "string"},
+        "gpuCount": {"type": "integer", "minimum": 1},
+        "durationMinutes": {"type": "integer", "minimum": 1},
+        "earliestStart": {"type": "string", "format": "date-time"},
+        "deadline": {"type": "string", "format": "date-time"},
+        "priority": {"type": "integer", "minimum": 1, "maximum": 100},
+        "interruptible": {"type": "boolean"},
+        "checkpointable": {"type": "boolean"},
+        "allowedRegions": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "maxLatencyMs": {"type": ["integer", "null"], "minimum": 0},
+        "maxBudgetUsd": {"type": ["number", "null"], "minimum": 0},
+        "baselinePoolId": {"type": ["string", "null"]}
+      }
+    },
+    "resourcePool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "provider", "cluster", "region", "gpuType", "capacityBySlot", "priceUsdPerGpuHour", "gpuPowerKw", "pue", "carbonGramsPerKwhBySlot", "latencyMs", "availabilityBps", "source"],
+      "properties": {
+        "id": {"type": "string"},
+        "provider": {"type": "string"},
+        "cluster": {"type": "string"},
+        "region": {"type": "string"},
+        "gpuType": {"type": "string"},
+        "capacityBySlot": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0}},
+        "priceUsdPerGpuHour": {"type": "number", "minimum": 0},
+        "gpuPowerKw": {"type": "number", "exclusiveMinimum": 0},
+        "pue": {"type": "number", "minimum": 1},
+        "carbonGramsPerKwhBySlot": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0}},
+        "latencyMs": {"type": "integer", "minimum": 0},
+        "availabilityBps": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "egressUsdPerGb": {"type": "number", "minimum": 0, "default": 0},
+        "source": {"$ref": "#/$defs/sourceRef"}
+      }
+    }
+  }
+}

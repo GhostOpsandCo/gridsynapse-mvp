@@ -76,10 +76,25 @@ Thumbs.db
 feedback.json
 validation_report.json
 data/
+!data/
+data/*
+!data/scenarios/
+!data/scenarios/*.json
 postgres_data/
 redis_data/
 prometheus_data/
 grafana_data/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.vercel/
+
+# Generated evidence
+evidence/benchmarks/*.json
+evidence/screenshots/*.png
 
 # Ignore text files from initial upload
 gridsynapse-*.txt

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gridsynapse.io/schemas/v2/optimization-result.schema.json",
+  "title": "GridSynapse Optimization Result v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "recommendationId",
+    "scenarioId",
+    "status",
+    "inputHash",
+    "solver",
+    "baseline",
+    "optimized",
+    "deltas",
+    "validation",
+    "approval"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "gridsynapse-optimization-result-v2"},
+    "recommendationId": {"type": "string"},
+    "scenarioId": {"type": "string"},
+    "status": {"type": "string", "enum": ["feasible", "partial", "infeasible", "error"]},
+    "inputHash": {"type": "string"},
+    "solver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend", "version", "durationMs", "objectiveProfile"],
+      "properties": {
+        "backend": {"const": "ortools-cp-sat"},
+        "version": {"type": "string"},
+        "durationMs": {"type": "integer", "minimum": 0},
+        "objectiveProfile": {"type": "string", "enum": ["cost", "balanced", "carbon", "sla"]}
+      }
+    },
+    "baseline": {"$ref": "#/$defs/plan"},
+    "optimized": {"$ref": "#/$defs/plan"},
+    "deltas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["costUsd", "costPercent", "emissionsKgCo2e", "emissionsPercent", "delayMinutes"],
+      "properties": {
+        "costUsd": {"type": ["number", "null"]},
+        "costPercent": {"type": ["number", "null"]},
+        "emissionsKgCo2e": {"type": ["number", "null"]},
+        "emissionsPercent": {"type": ["number", "null"]},
+        "delayMinutes": {"type": ["integer", "null"]}
+      }
+    },
+    "infeasibleReasons": {"type": "array", "items": {"type": "string"}},
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "checks"],
+      "properties": {
+        "valid": {"type": "boolean"},
+        "checks": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"type": "string", "enum": ["not_reviewed", "approved", "revision_required", "invalidated"]},
+        "approvedBy": {"type": ["string", "null"]},
+        "approvedAt": {"type": ["string", "null"], "format": "date-time"}
+      }
+    }
+  },
+  "$defs": {
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workloadId", "poolId", "start", "end", "gpuCount", "costUsd", "energyKwh", "emissionsKgCo2e", "delayMinutes", "reasons"],
+      "properties": {
+        "workloadId": {"type": "string"},
+        "poolId": {"type": "string"},
+        "start": {"type": "string", "format": "date-time"},
+        "end": {"type": "string", "format": "date-time"},
+        "gpuCount": {"type": "integer", "minimum": 1},
+        "costUsd": {"type": "number", "minimum": 0},
+        "energyKwh": {"type": "number", "minimum": 0},
+        "emissionsKgCo2e": {"type": "number", "minimum": 0},
+        "delayMinutes": {"type": "integer", "minimum": 0},
+        "reasons": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "placements", "totalCostUsd", "totalEnergyKwh", "totalEmissionsKgCo2e", "totalDelayMinutes", "capacityRiskScore"],
+      "properties": {
+        "status": {"type": "string", "enum": ["feasible", "partial", "infeasible"]},
+        "placements": {"type": "array", "items": {"$ref": "#/$defs/placement"}},
+        "totalCostUsd": {"type": ["number", "null"], "minimum": 0},
+        "totalEnergyKwh": {"type": ["number", "null"], "minimum": 0},
+        "totalEmissionsKgCo2e": {"type": ["number", "null"], "minimum": 0},
+        "totalDelayMinutes": {"type": ["integer", "null"], "minimum": 0},
+        "capacityRiskScore": {"type": ["number", "null"], "minimum": 0}
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+[project]
+name = "gridsynapse-v2"
+version = "0.2.0"
+description = "Deterministic AI compute optimization and operator workflow"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "ortools>=9.12,<10",
+  "prometheus-client>=0.21,<1",
+  "pydantic>=2.10,<3",
+  "python-multipart>=0.0.20,<1",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = [
+  "packages/contracts",
+  "packages/optimizer",
+  "packages/adapters",
+  "packages/explanations",
+  "services/api",
+]
+include = [
+  "gridsynapse_contracts*",
+  "gridsynapse_optimizer*",
+  "gridsynapse_adapters*",
+  "gridsynapse_explanations*",
+  "app*",
+]
+
+[project.optional-dependencies]
+dev = [
+  "jsonschema>=4.23,<5",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.9,<1",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers --disable-warnings"
+testpaths = ["tests/v2", "services/api/tests"]
+pythonpath = [
+  "packages/contracts",
+  "packages/optimizer",
+  "packages/adapters",
+  "packages/explanations",
+  "services/api",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.vercel]
+entrypoint = "api.index:app"
+
+[tool.coverage.run]
+branch = true
+source = [
+  "packages/contracts",
+  "packages/optimizer",
+  "packages/adapters",
+  "packages/explanations",
+  "services/api",
+]

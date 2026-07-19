@@ -1,0 +1,146 @@
+{
+  "schemaVersion": "gridsynapse-optimization-request-v2",
+  "scenarioId": "reference-cost-carbon-tradeoff-v1",
+  "horizon": {
+    "start": "2026-07-20T00:00:00Z",
+    "end": "2026-07-20T08:00:00Z",
+    "slotMinutes": 30
+  },
+  "policy": {
+    "profile": "balanced",
+    "weights": {
+      "costBps": 4000,
+      "carbonBps": 2500,
+      "delayBps": 2000,
+      "riskBps": 1500
+    },
+    "maxSolverSeconds": 5
+  },
+  "workloads": [
+    {
+      "id": "workload-train-001",
+      "name": "Foundation model train",
+      "workloadType": "training",
+      "gpuType": "A100-80GB",
+      "gpuCount": 8,
+      "durationMinutes": 240,
+      "earliestStart": "2026-07-20T00:00:00Z",
+      "deadline": "2026-07-20T08:00:00Z",
+      "priority": 70,
+      "interruptible": false,
+      "checkpointable": true,
+      "allowedRegions": ["us-west", "us-central", "us-east"],
+      "maxLatencyMs": null,
+      "maxBudgetUsd": 150,
+      "baselinePoolId": "pool-us-west-a100"
+    },
+    {
+      "id": "workload-tune-001",
+      "name": "Support model tune",
+      "workloadType": "fine_tuning",
+      "gpuType": "A100-80GB",
+      "gpuCount": 4,
+      "durationMinutes": 120,
+      "earliestStart": "2026-07-20T00:00:00Z",
+      "deadline": "2026-07-20T06:00:00Z",
+      "priority": 60,
+      "interruptible": false,
+      "checkpointable": true,
+      "allowedRegions": ["us-west", "us-central", "us-east"],
+      "maxLatencyMs": null,
+      "maxBudgetUsd": 40,
+      "baselinePoolId": "pool-us-west-a100"
+    },
+    {
+      "id": "workload-embed-001",
+      "name": "Embedding refresh",
+      "workloadType": "batch_inference",
+      "gpuType": "A100-80GB",
+      "gpuCount": 2,
+      "durationMinutes": 60,
+      "earliestStart": "2026-07-20T00:00:00Z",
+      "deadline": "2026-07-20T04:00:00Z",
+      "priority": 80,
+      "interruptible": true,
+      "checkpointable": true,
+      "allowedRegions": ["us-west", "us-central", "us-east"],
+      "maxLatencyMs": 60,
+      "maxBudgetUsd": 10,
+      "baselinePoolId": "pool-us-west-a100"
+    }
+  ],
+  "resourcePools": [
+    {
+      "id": "pool-us-west-a100",
+      "provider": "Scenario Cloud",
+      "cluster": "west-train-01",
+      "region": "us-west",
+      "gpuType": "A100-80GB",
+      "capacityBySlot": [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16],
+      "priceUsdPerGpuHour": 3.1,
+      "gpuPowerKw": 0.4,
+      "pue": 1.18,
+      "carbonGramsPerKwhBySlot": [410, 410, 410, 410, 410, 410, 410, 410, 410, 410, 410, 410, 410, 410, 410, 410],
+      "latencyMs": 18,
+      "availabilityBps": 9950,
+      "egressUsdPerGb": 0,
+      "source": {
+        "sourceId": "reference-synthetic-west",
+        "sourceType": "synthetic",
+        "sourceUrl": "https://gridsynapse.io/methodology/reference-scenario",
+        "observedAt": "2026-07-17T00:00:00Z",
+        "unit": "mixed scenario inputs",
+        "freshnessSeconds": 31536000,
+        "confidence": "high"
+      }
+    },
+    {
+      "id": "pool-us-central-a100",
+      "provider": "Scenario Cloud",
+      "cluster": "central-train-01",
+      "region": "us-central",
+      "gpuType": "A100-80GB",
+      "capacityBySlot": [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16],
+      "priceUsdPerGpuHour": 2.55,
+      "gpuPowerKw": 0.4,
+      "pue": 1.2,
+      "carbonGramsPerKwhBySlot": [620, 620, 620, 620, 620, 620, 620, 620, 620, 620, 620, 620, 620, 620, 620, 620],
+      "latencyMs": 38,
+      "availabilityBps": 9850,
+      "egressUsdPerGb": 0,
+      "source": {
+        "sourceId": "reference-synthetic-central",
+        "sourceType": "synthetic",
+        "sourceUrl": "https://gridsynapse.io/methodology/reference-scenario",
+        "observedAt": "2026-07-17T00:00:00Z",
+        "unit": "mixed scenario inputs",
+        "freshnessSeconds": 31536000,
+        "confidence": "high"
+      }
+    },
+    {
+      "id": "pool-us-east-a100",
+      "provider": "Scenario Cloud",
+      "cluster": "east-train-01",
+      "region": "us-east",
+      "gpuType": "A100-80GB",
+      "capacityBySlot": [16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16],
+      "priceUsdPerGpuHour": 3.35,
+      "gpuPowerKw": 0.4,
+      "pue": 1.15,
+      "carbonGramsPerKwhBySlot": [180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180],
+      "latencyMs": 52,
+      "availabilityBps": 9900,
+      "egressUsdPerGb": 0,
+      "source": {
+        "sourceId": "reference-synthetic-east",
+        "sourceType": "synthetic",
+        "sourceUrl": "https://gridsynapse.io/methodology/reference-scenario",
+        "observedAt": "2026-07-17T00:00:00Z",
+        "unit": "mixed scenario inputs",
+        "freshnessSeconds": 31536000,
+        "confidence": "high"
+      }
+    }
+  ]
+}

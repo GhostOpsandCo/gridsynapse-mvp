@@ -1,0 +1,319 @@
+{
+  "evidenceVersion": "gridsynapse-reference-evidence-v1",
+  "generatedAt": "2026-07-18T04:26:45.721168+00:00",
+  "scenarioId": "reference-cost-carbon-tradeoff-v1",
+  "sourceTypes": [
+    "synthetic"
+  ],
+  "note": "Values are deterministic outputs from the checked-in reference scenario; they are not production savings claims.",
+  "profiles": [
+    {
+      "profile": "cost",
+      "recommendationId": "rec-ba90a1dd7fe1-cost",
+      "status": "feasible",
+      "validation": {
+        "valid": true,
+        "checks": [
+          "Input hash matches the canonical request",
+          "Baseline independently validates",
+          "Optimized schedule independently validates"
+        ]
+      },
+      "solverDurationMs": 4,
+      "baseline": {
+        "status": "feasible",
+        "costUsd": 130.2,
+        "energyKwh": 19.824,
+        "emissionsKgCo2e": 8.128,
+        "delayMinutes": 0,
+        "capacityRiskScore": 70.1,
+        "placements": [
+          {
+            "workloadId": "workload-embed-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T01:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-train-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T04:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-tune-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T02:00:00+00:00"
+          }
+        ]
+      },
+      "optimized": {
+        "status": "feasible",
+        "costUsd": 112.6,
+        "energyKwh": 20.08,
+        "emissionsKgCo2e": 11.458,
+        "delayMinutes": 0,
+        "capacityRiskScore": 40.17,
+        "placements": [
+          {
+            "workloadId": "workload-embed-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T01:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-train-001",
+            "poolId": "pool-us-central-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T04:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-tune-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T02:00:00+00:00"
+          }
+        ]
+      },
+      "deltas": {
+        "costUsd": -17.6,
+        "costPercent": -13.52,
+        "emissionsKgCo2e": 3.33,
+        "emissionsPercent": 40.97,
+        "delayMinutes": 0
+      }
+    },
+    {
+      "profile": "balanced",
+      "recommendationId": "rec-020045d764e7-balanced",
+      "status": "feasible",
+      "validation": {
+        "valid": true,
+        "checks": [
+          "Input hash matches the canonical request",
+          "Baseline independently validates",
+          "Optimized schedule independently validates"
+        ]
+      },
+      "solverDurationMs": 3,
+      "baseline": {
+        "status": "feasible",
+        "costUsd": 130.2,
+        "energyKwh": 19.824,
+        "emissionsKgCo2e": 8.128,
+        "delayMinutes": 0,
+        "capacityRiskScore": 70.1,
+        "placements": [
+          {
+            "workloadId": "workload-embed-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T01:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-train-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T04:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-tune-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T02:00:00+00:00"
+          }
+        ]
+      },
+      "optimized": {
+        "status": "feasible",
+        "costUsd": 138.2,
+        "energyKwh": 19.44,
+        "emissionsKgCo2e": 4.585,
+        "delayMinutes": 0,
+        "capacityRiskScore": 40.13,
+        "placements": [
+          {
+            "workloadId": "workload-embed-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T01:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-train-001",
+            "poolId": "pool-us-east-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T04:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-tune-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T02:00:00+00:00"
+          }
+        ]
+      },
+      "deltas": {
+        "costUsd": 8.0,
+        "costPercent": 6.14,
+        "emissionsKgCo2e": -3.543,
+        "emissionsPercent": -43.59,
+        "delayMinutes": 0
+      }
+    },
+    {
+      "profile": "carbon",
+      "recommendationId": "rec-ea783006e45d-carbon",
+      "status": "feasible",
+      "validation": {
+        "valid": true,
+        "checks": [
+          "Input hash matches the canonical request",
+          "Baseline independently validates",
+          "Optimized schedule independently validates"
+        ]
+      },
+      "solverDurationMs": 3,
+      "baseline": {
+        "status": "feasible",
+        "costUsd": 130.2,
+        "energyKwh": 19.824,
+        "emissionsKgCo2e": 8.128,
+        "delayMinutes": 0,
+        "capacityRiskScore": 70.1,
+        "placements": [
+          {
+            "workloadId": "workload-embed-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T01:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-train-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T04:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-tune-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T02:00:00+00:00"
+          }
+        ]
+      },
+      "optimized": {
+        "status": "feasible",
+        "costUsd": 140.7,
+        "energyKwh": 19.32,
+        "emissionsKgCo2e": 3.478,
+        "delayMinutes": 0,
+        "capacityRiskScore": 70.2,
+        "placements": [
+          {
+            "workloadId": "workload-embed-001",
+            "poolId": "pool-us-east-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T01:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-train-001",
+            "poolId": "pool-us-east-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T04:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-tune-001",
+            "poolId": "pool-us-east-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T02:00:00+00:00"
+          }
+        ]
+      },
+      "deltas": {
+        "costUsd": 10.5,
+        "costPercent": 8.06,
+        "emissionsKgCo2e": -4.65,
+        "emissionsPercent": -57.21,
+        "delayMinutes": 0
+      }
+    },
+    {
+      "profile": "sla",
+      "recommendationId": "rec-1526d6cf41d3-sla",
+      "status": "feasible",
+      "validation": {
+        "valid": true,
+        "checks": [
+          "Input hash matches the canonical request",
+          "Baseline independently validates",
+          "Optimized schedule independently validates"
+        ]
+      },
+      "solverDurationMs": 3,
+      "baseline": {
+        "status": "feasible",
+        "costUsd": 130.2,
+        "energyKwh": 19.824,
+        "emissionsKgCo2e": 8.128,
+        "delayMinutes": 0,
+        "capacityRiskScore": 70.1,
+        "placements": [
+          {
+            "workloadId": "workload-embed-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T01:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-train-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T04:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-tune-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T02:00:00+00:00"
+          }
+        ]
+      },
+      "optimized": {
+        "status": "feasible",
+        "costUsd": 138.2,
+        "energyKwh": 19.44,
+        "emissionsKgCo2e": 4.585,
+        "delayMinutes": 0,
+        "capacityRiskScore": 40.13,
+        "placements": [
+          {
+            "workloadId": "workload-embed-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T01:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-train-001",
+            "poolId": "pool-us-east-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T04:00:00+00:00"
+          },
+          {
+            "workloadId": "workload-tune-001",
+            "poolId": "pool-us-west-a100",
+            "start": "2026-07-20T00:00:00+00:00",
+            "end": "2026-07-20T02:00:00+00:00"
+          }
+        ]
+      },
+      "deltas": {
+        "costUsd": 8.0,
+        "costPercent": 6.14,
+        "emissionsKgCo2e": -3.543,
+        "emissionsPercent": -43.59,
+        "delayMinutes": 0
+      }
+    }
+  ]
+}

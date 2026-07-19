@@ -1,0 +1,63 @@
+name: GridSynapse v2 CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "services/api/**"
+      - "tests/v2/**"
+      - "scripts/**"
+      - "data/scenarios/**"
+      - "pyproject.toml"
+      - ".github/workflows/v2-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "services/api/**"
+      - "tests/v2/**"
+      - "scripts/**"
+      - "data/scenarios/**"
+      - "pyproject.toml"
+      - ".github/workflows/v2-ci.yml"
+
+jobs:
+  verify-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Verify Python
+        run: |
+          ruff format --check packages services tests/v2 scripts
+          ruff check packages services tests/v2 scripts
+          pytest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Verify operator console
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+
+      - name: Enforce solver latency gate
+        run: python scripts/run_benchmark.py --iterations 3 --warmups 1

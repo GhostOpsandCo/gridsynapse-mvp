@@ -1,232 +1,175 @@
-# GridSynapse MVP 🇺🇸
+# GridSynapse v2
 
-**The Nervous System for America's AI Revolution**
+GridSynapse is an operator-facing AI compute optimization console. It evaluates where and when queued GPU workloads can run across eligible resource pools, then produces a validated recommendation with explicit cost, carbon, delay, and capacity-risk tradeoffs.
 
-[![CI/CD Pipeline](https://github.com/GhostOpsandCo/gridsynapse-mvp/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/GhostOpsandCo/gridsynapse-mvp/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+This repository contains a working product foundation, not a marketing-only dashboard:
 
-GridSynapse transforms idle American data centers into a unified AI compute grid. By intelligently routing workloads based on real-time electricity prices and carbon intensity, we make AI infrastructure 40% cheaper and 60% cleaner while strengthening America's technological sovereignty.
+- typed scenario, workload, resource, recommendation, and approval contracts;
+- deterministic baseline construction;
+- constraint-based optimization with OR-Tools CP-SAT;
+- independent post-solve validation;
+- no-key live adapters for SkyPilot's public GPU catalog and the official NESO GB carbon forecast;
+- a FastAPI service with explanations, approvals, exports, and metrics;
+- optional Supabase persistence for recommendations, reviews, and decision history;
+- a Next.js operator workflow for reviewing and acting on recommendations;
+- reproducible reference evidence and a fixed solver-latency benchmark.
 
-## 🚀 Quick Start
+![GridSynapse operator console](docs/assets/operator-console.png)
 
-```bash
-# Clone and run in under 60 seconds
-git clone https://github.com/GhostOpsandCo/gridsynapse-mvp.git
-cd gridsynapse-mvp
-./quickstart.sh
-```
+## What The Product Demonstrates
 
-This launches the complete stack including:
-- FastAPI service with live API documentation
-- OR-Tools optimization solver (<100ms performance)
-- PostgreSQL database
-- Redis cache
-- Prometheus metrics
-- Grafana dashboards
+1. **Observe the queue.** Review workloads, GPU demand, time windows, resource capacity, and source freshness.
+2. **Set an operating objective.** Compare Cost, Balanced, Carbon, and SLA profiles without changing hard workload constraints.
+3. **Optimize.** CP-SAT selects one feasible placement per workload while enforcing GPU type, region, latency, budget, deadline, and slot-capacity limits.
+4. **Validate independently.** A separate validator checks the request hash, every placement, and aggregate capacity before the recommendation can be reviewed.
+5. **Explain the tradeoff.** The explanation layer cites only calculated plan values and scenario facts.
+6. **Keep a human in control.** Operators approve or request revision; GridSynapse does not execute infrastructure changes.
 
-Access the services:
-- **API Documentation**: http://localhost:8000/docs
-- **Grafana Dashboards**: http://localhost:3000 (admin/admin)
-- **Prometheus Metrics**: http://localhost:9090
+## Live Market Inputs
 
-## 🏗️ Architecture
+The default console requests a hybrid live scenario before falling back to the checked-in reference case:
 
-GridSynapse operates as a distributed nervous system across American data centers:
+- **Pricing:** A100-80GB catalog prices from the open [SkyPilot cloud catalog](https://github.com/skypilot-org/skypilot-catalog), which is refreshed by the project throughout the day. Catalog prices are comparison inputs, not a guarantee of inventory or an executable quote.
+- **Carbon:** the official, unauthenticated [NESO Carbon Intensity API](https://carbon-intensity.github.io/api-definitions/) supplies the 30-minute Great Britain forecast. Regions without a no-key authoritative feed are explicitly labeled as low-confidence planning estimates.
+- **Capacity, latency, and availability:** intentionally modeled until provider credentials and inventory APIs are connected. They are never labeled as live.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    GridSynapse Control Plane                 │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │  FastAPI    │  │  OR-Tools    │  │   GhostOps      │  │
-│  │  REST API   │  │  Optimizer   │  │   Agents        │  │
-│  └─────────────┘  └──────────────┘  └──────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                    ┌─────────┴─────────┐
-                    │   WireGuard Mesh  │
-                    └─────────┬─────────┘
-        ┌──────────────┬──────┴────────┬──────────────┐
-        ▼              ▼               ▼              ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  West Coast  │ │  East Coast  │ │   Central    │ │   Partner    │
-│ Data Center  │ │ Data Center  │ │ Data Center  │ │   Facility   │
-└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
-```
+The API caches a successful market snapshot for 30 minutes and drops an unavailable provider from the comparison. If fewer than two current catalog entries are available, the console falls back to the clearly labeled synthetic reference scenario.
 
-### Core Components
+## Reference Result
 
-1. **API Service** (`api/main.py`)
-   - RESTful endpoints for job submission
-   - Real-time price forecasting
-   - Carbon intensity tracking
-   - Automated billing integration
+The checked-in reference scenario is intentionally small and synthetic. It exists to prove the decision path and show that different objectives produce different defensible outcomes.
 
-2. **Optimization Solver** (`solver/optimizer.py`)
-   - Dual-commodity optimization (price + carbon)
-   - Sub-100ms solving for real-time decisions
-   - Google OR-Tools based linear programming
-   - Handles 1000+ concurrent jobs
+| Profile | Cost vs baseline | Emissions vs baseline | Delay change | Validation |
+| --- | ---: | ---: | ---: | --- |
+| Cost | -13.52% | +40.97% | 0 min | Passed |
+| Balanced | +6.14% | -43.59% | 0 min | Passed |
+| Carbon | +8.06% | -57.21% | 0 min | Passed |
+| SLA | +6.14% | -43.59% | 0 min | Passed |
 
-3. **GhostOps Agents** (`agents/agent_prompts.py`)
-   - Autonomous forecasting agents
-   - Bid optimization agents
-   - Real-time dispatch agents
-   - Security and compliance monitoring
-
-4. **Infrastructure**
-   - Kubernetes operator for workload orchestration
-   - WireGuard mesh for secure multi-region networking
-   - Prometheus + Grafana for observability
-   - OpenTelemetry for distributed tracing
-
-## 📊 Key Features
-
-### For AI Companies
-- **40% Cost Reduction**: Exploit price arbitrage across regions
-- **Carbon-Neutral Compute**: Automatic routing to renewable energy
-- **Zero Migration Effort**: Drop-in replacement for existing infrastructure
-- **SLA Guarantees**: 99.9% uptime with automatic failover
-
-### For Data Centers
-- **New Revenue Stream**: Monetize idle capacity
-- **Automated Operations**: No manual intervention required
-- **Partner Dashboard**: Real-time earnings and utilization
-- **Compliance Built-in**: SOC2, HIPAA, FedRAMP ready
-
-### For America
-- **Energy Efficiency**: Reduce grid strain during peak hours
-- **Carbon Reduction**: 60% lower emissions than traditional compute
-- **Economic Growth**: Keep AI compute dollars in America
-- **Grid Resilience**: Distributed compute reduces single points of failure
-
-## 🛠️ Development
-
-### Prerequisites
-- Docker & Docker Compose
-- Python 3.11+
-- Make
-- Git
-
-### Local Development
+These are outputs from `data/scenarios/reference-scenario.json`, not claims about production savings. Regenerate them with:
 
 ```bash
-# Install dependencies
-make install
-
-# Run development server
-make dev
-
-# Run tests
-make test
-
-# Lint and format code
-make lint
-
-# Build Docker images
-make docker-build
+.venv/bin/python scripts/generate_reference_evidence.py
 ```
 
-### Project Structure
+The complete machine-readable result is in [`evidence/reference-profile-results.json`](evidence/reference-profile-results.json).
 
-```
-gridsynapse-mvp/
-├── api/                    # FastAPI application
-│   ├── main.py            # API endpoints
-│   ├── routers/           # Route handlers
-│   ├── models/            # Data models
-│   └── services/          # Business logic
-├── solver/                # Optimization engine
-│   ├── optimizer.py       # OR-Tools solver
-│   └── tests/            # Solver tests
-├── agents/               # Autonomous agents
-│   ├── agent_prompts.py  # GhostOps templates
-│   └── prompts/          # Agent configurations
-├── infra/                # Infrastructure configs
-│   ├── k8s/              # Kubernetes manifests
-│   ├── prometheus/       # Monitoring config
-│   └── grafana/          # Dashboard definitions
-└── tests/                # Integration tests
+## Architecture
+
+```text
+Next.js operator console (apps/web)
+            |
+            v
+FastAPI workflow API (services/api)
+      |                |
+      v                v
+typed adapters     grounded explanations
+      |
+      v
+contracts -> baseline -> CP-SAT optimizer -> independent validator
 ```
 
-## 🔒 Security
+The optimizer is deterministic for a fixed request: one solver worker, a fixed seed, stable candidate ordering, and canonical input hashing. The API uses Supabase when backend credentials are configured and falls back to process memory for local evaluation. The console makes the active persistence mode visible so an operator is never led to believe a session-only review was stored durably.
 
-GridSynapse implements defense-in-depth security:
+## Durable Decision History
 
-- **WireGuard VPN**: All inter-datacenter traffic encrypted
-- **JWT Authentication**: Secure API access
-- **Role-Based Access Control**: Granular permissions
-- **Audit Logging**: Complete activity trail
-- **Compliance**: SOC2, HIPAA, FedRAMP ready
-
-## 📈 Performance
-
-Our optimization solver achieves:
-- **<100ms** solving time for 1000 jobs
-- **<10ms** API response time (p99)
-- **1M+** requests per second capacity
-- **99.99%** uptime SLA
-
-## 🤝 Partner Integration
-
-Join the GridSynapse network:
+Apply [`supabase/migrations/202607180001_gridsynapse_persistence.sql`](supabase/migrations/202607180001_gridsynapse_persistence.sql) to a dedicated Supabase project, then configure the API with backend-only credentials:
 
 ```bash
-# One-command partner onboarding
-curl -X POST https://api.gridsynapse.com/v1/partners/onboard \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Your Data Center",
-    "contact_email": "ops@datacenter.com",
-    "datacenter_locations": ["us-west-2", "us-east-1"]
-  }'
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SECRET_KEY=your-backend-secret-key
 ```
 
-## 📊 Business Model
+The secret key must never be exposed to the browser. The migration enables row-level security, removes access for `anon` and `authenticated`, grants the backend role access to recommendation records, and limits decision events to append-only writes plus reads. Without both variables, GridSynapse runs in clearly labeled session-memory mode.
 
-- **AI Companies**: Pay only for compute used (15% below AWS)
-- **Data Centers**: Receive 70% of revenue generated
-- **GridSynapse**: 30% platform fee
-- **Carbon Credits**: Additional revenue from verified offsets
+## Quick Start
 
-## 🚀 Roadmap
+Prerequisites:
 
-### Phase 1: MVP (Current)
-- ✅ Core optimization engine
-- ✅ Multi-region orchestration
-- ✅ Basic API and billing
-- ✅ Partner onboarding
+- Python 3.12+
+- Node.js 22+
 
-### Phase 2: Scale
-- 🔄 Kubernetes operator
-- 🔄 Advanced forecasting
-- 🔄 Spot market integration
-- 🔄 Enterprise features
+Install:
 
-### Phase 3: Dominate
-- 📅 Global expansion
-- 📅 Edge compute integration
-- 📅 Quantum readiness
-- 📅 IPO preparation
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -e ".[dev]"
+cd apps/web && npm ci
+```
 
-## 👥 Team
+Run the API from the repository root:
 
-- **Elijah Paul** - CEO & Founder
-- **GhostOps** - Autonomous Operations
+```bash
+PYTHONPATH=packages/contracts:packages/optimizer:packages/adapters:packages/explanations:services/api \
+  .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
+```
 
-## 📄 License
+Run the console in a second terminal:
 
-MIT License - see [LICENSE](LICENSE) file
+```bash
+cd apps/web
+npm run dev
+```
 
-## 🤝 Contributing
+Open:
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+- Operator console: `http://127.0.0.1:3020`
+- OpenAPI: `http://127.0.0.1:8080/docs`
+- Prometheus metrics: `http://127.0.0.1:8080/metrics`
 
-## 📞 Contact
+Equivalent shortcuts are available as `make v2-api`, `make v2-web`, and `make v2-check`.
 
-- **Email**: contact@gridsynapse.com
-- **Website**: https://gridsynapse.com
-- **Twitter**: @gridsynapse
+## API Surface
 
----
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/health` | Service health |
+| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/api/v2/scenarios` | Scenario inventory |
+| `GET` | `/api/v2/live-market/scenario` | Hybrid live catalog, carbon, and provenance snapshot |
+| `GET` | `/api/v2/scenarios/{id}` | Typed scenario |
+| `GET` | `/api/v2/scenarios/{id}/data-health` | Source freshness and confidence |
+| `POST` | `/api/v2/scenarios/validate` | Contract validation summary |
+| `POST` | `/api/v2/optimizations` | Baseline, optimize, and validate |
+| `GET` | `/api/v2/optimizations/{id}/explanation` | Grounded operator explanation |
+| `POST` | `/api/v2/optimizations/{id}/approval` | Approve or request revision |
+| `GET` | `/api/v2/optimizations/{id}/export` | JSON or CSV evidence export |
+| `GET` | `/api/v2/decision-history` | Recent recommendations and operator review states |
 
-**GridSynapse - Powering America's AI Future** 🇺🇸
+## Verification
+
+Run the full v2 gate:
+
+```bash
+make v2-check
+```
+
+That command checks formatting and linting, runs Python tests, type-checks and builds the web app, and enforces the fixed benchmark gate.
+
+The benchmark scenario contains 100 jobs, 6 resource pools, and 96 half-hour slots. On the development machine recorded in the latest local evidence run, p95 end-to-end `optimize(request)` latency was **140.46 ms** across 8 measured runs. The threshold is an engineering regression gate, not a production SLA. See [`evidence/README.md`](evidence/README.md) for method and limitations.
+
+## Containers
+
+The v2 stack is isolated from the legacy compose configuration:
+
+```bash
+docker compose -f docker-compose.v2.yml up --build
+```
+
+This starts the API on port `8080` and the operator console on port `3020`.
+
+## Boundaries
+
+- Checked-in reference inputs are synthetic and labeled as such; the live market endpoint identifies every input at the metric level.
+- GridSynapse recommends placements; it does not provision or migrate workloads.
+- Carbon values depend on the supplied intensity data and are reported as estimates.
+- Price, latency, availability, and capacity are only as trustworthy as their source metadata.
+- Approval is human-controlled, and any input change should invalidate a prior decision in a production implementation.
+- Durable identity, RBAC, credentialed inventory adapters, and execution integrations remain future production work. Supabase persistence covers recommendation and review history when configured; it is not a substitute for user identity or authorization.
+
+## Legacy Reference
+
+The original dashboard remains in `infra/dashboard-v2.html` as a visual and historical reference. GridSynapse v2 is implemented separately in `apps/web`, `services/api`, and `packages` so the legacy files are preserved.
+
+Detailed product, architecture, and evidence notes are in [`docs/v2`](docs/v2/README.md).

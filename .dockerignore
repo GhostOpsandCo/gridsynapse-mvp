@@ -1,0 +1,13 @@
+.git
+.github
+.venv
+**/.next
+**/node_modules
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+evidence/screenshots
+evidence/benchmarks
+docs/assets
+logs
