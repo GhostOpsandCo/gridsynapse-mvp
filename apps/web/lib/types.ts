@@ -1,0 +1,202 @@
+export type ObjectiveProfile = "cost" | "balanced" | "carbon" | "sla";
+
+export interface SourceRef {
+  sourceId: string;
+  sourceType:
+    | "synthetic"
+    | "observed"
+    | "forecast"
+    | "contract"
+    | "public_snapshot"
+    | "estimated";
+  sourceUrl: string | null;
+  observedAt: string;
+  unit: string;
+  freshnessSeconds: number;
+  confidence: "low" | "medium" | "high";
+}
+
+export interface Horizon {
+  start: string;
+  end: string;
+  slotMinutes: number;
+}
+
+export interface Workload {
+  id: string;
+  name: string;
+  workloadType: "training" | "fine_tuning" | "embeddings" | "batch_inference";
+  gpuType: string;
+  gpuCount: number;
+  durationMinutes: number;
+  earliestStart: string;
+  deadline: string;
+  priority: number;
+  interruptible: boolean;
+  checkpointable: boolean;
+  allowedRegions: string[];
+  maxLatencyMs: number | null;
+  maxBudgetUsd: number | null;
+  baselinePoolId: string | null;
+}
+
+export interface ResourcePool {
+  id: string;
+  provider: string;
+  cluster: string;
+  region: string;
+  gpuType: string;
+  capacityBySlot: number[];
+  priceUsdPerGpuHour: number;
+  gpuPowerKw: number;
+  pue: number;
+  carbonGramsPerKwhBySlot: number[];
+  latencyMs: number;
+  availabilityBps: number;
+  egressUsdPerGb: number;
+  source: SourceRef;
+  metricSources: {
+    price: SourceRef;
+    carbon: SourceRef;
+    capacity: SourceRef;
+    latency: SourceRef;
+    availability: SourceRef;
+  } | null;
+}
+
+export interface OptimizationRequest {
+  schemaVersion: string;
+  scenarioId: string;
+  horizon: Horizon;
+  policy: {
+    profile: ObjectiveProfile;
+    weights: { costBps: number; carbonBps: number; delayBps: number; riskBps: number };
+    maxSolverSeconds: number;
+  };
+  workloads: Workload[];
+  resourcePools: ResourcePool[];
+}
+
+export interface Placement {
+  workloadId: string;
+  poolId: string;
+  start: string;
+  end: string;
+  gpuCount: number;
+  costUsd: number;
+  energyKwh: number;
+  emissionsKgCo2e: number;
+  delayMinutes: number;
+  reasons: string[];
+}
+
+export interface Plan {
+  status: "feasible" | "infeasible";
+  placements: Placement[];
+  totalCostUsd: number;
+  totalEnergyKwh: number;
+  totalEmissionsKgCo2e: number;
+  totalDelayMinutes: number;
+  capacityRiskScore: number;
+}
+
+export interface OptimizationResult {
+  schemaVersion: string;
+  recommendationId: string;
+  scenarioId: string;
+  status: "feasible" | "partial" | "infeasible" | "error";
+  inputHash: string;
+  solver: {
+    backend: string;
+    version: string;
+    durationMs: number;
+    objectiveProfile: ObjectiveProfile;
+  };
+  baseline: Plan;
+  optimized: Plan;
+  deltas: {
+    costUsd: number;
+    costPercent: number;
+    emissionsKgCo2e: number;
+    emissionsPercent: number;
+    delayMinutes: number;
+  };
+  infeasibleReasons: string[];
+  validation: { valid: boolean; checks: string[] };
+  approval: {
+    status: "not_reviewed" | "approved" | "revision_required" | "invalidated";
+    approvedBy: string | null;
+    approvedAt: string | null;
+  };
+}
+
+export interface Explanation {
+  recommendationId: string;
+  headline: string;
+  summary: string;
+  decisionFactors: string[];
+  tradeoffs: string[];
+  warnings: string[];
+  operatorAction: string;
+  generatedBy: string;
+}
+
+export interface DataHealth {
+  scenarioId: string;
+  status: "healthy" | "stale" | "warning" | "blocked";
+  sourceCount: number;
+  staleSourceCount: number;
+  sources: Array<{
+    poolId: string;
+    metric: string;
+    sourceId: string;
+    sourceType: string;
+    sourceUrl: string | null;
+    unit: string;
+    observedAt: string;
+    ageSeconds: number;
+    freshnessSeconds: number;
+    confidence: string;
+    stale: boolean;
+  }>;
+}
+
+export interface LiveMarketSnapshot {
+  scenario: OptimizationRequest;
+  health: DataHealth;
+  generatedAt: string;
+  marketMode: "hybrid-live";
+  warnings: string[];
+  sources: {
+    pricing: string;
+    carbon: string;
+    capacity: string;
+  };
+}
+
+export interface PersistenceStatus {
+  backend: "memory" | "supabase" | "unavailable";
+  durable: boolean;
+  detail: string;
+}
+
+export interface HealthResponse {
+  status: "healthy";
+  service: string;
+  version: string;
+  persistence: PersistenceStatus;
+}
+
+export interface DecisionHistoryItem {
+  recommendationId: string;
+  scenarioId: string;
+  objectiveProfile: ObjectiveProfile;
+  workloadCount: number;
+  totalCostUsd: number;
+  costDeltaUsd: number;
+  approvalStatus: OptimizationResult["approval"]["status"];
+  approvedBy: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
