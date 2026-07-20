@@ -175,21 +175,26 @@ export interface LiveMarketSnapshot {
 }
 
 export interface PersistenceStatus {
-  backend: "memory" | "supabase" | "unavailable";
+  backend: "memory" | "preview_session" | "supabase" | "unavailable";
   durable: boolean;
   detail: string;
+  previewSafeMode?: boolean;
+  durableWritesEnabled?: boolean;
+  writePolicy?: string;
 }
 
 export interface HealthResponse {
   status: "healthy";
   service: string;
   version: string;
+  previewSafeMode?: boolean;
   persistence: PersistenceStatus;
   procurement?: {
     enabled: boolean;
     mode: "portfolio_dry_run";
     executionEnabled: boolean;
     liveProviderCallsAvailable: false;
+    durableWritesEnabled?: boolean;
   };
 }
 

@@ -11,8 +11,7 @@ from gridsynapse_contracts import (
     ProcurementTransitionRequest,
 )
 from gridsynapse_optimizer import optimize
-
-from packages.procurement.gridsynapse_procurement import (
+from gridsynapse_procurement import (
     InvalidProcurementPlanError,
     ProcurementService,
     ProcurementTransitionError,

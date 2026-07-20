@@ -92,6 +92,23 @@ class InMemoryOptimizationRepository:
         }
 
 
+class PreviewSafeOptimizationRepository(InMemoryOptimizationRepository):
+    """Session-only repository that cannot reach durable persistence."""
+
+    def status(self) -> dict:
+        return {
+            "backend": "preview_session",
+            "durable": False,
+            "previewSafeMode": True,
+            "durableWritesEnabled": False,
+            "writePolicy": "session_only",
+            "detail": (
+                "Preview Safe Mode keeps recommendations and reviews in this API session. "
+                "Supabase writes and provider execution are disabled."
+            ),
+        }
+
+
 class SupabaseOptimizationRepository:
     table = "gridsynapse_optimization_runs"
     event_table = "gridsynapse_decision_events"
@@ -245,6 +262,14 @@ def _history_record(
 
 
 def build_repository() -> Repository:
+    if os.getenv("GRIDSYNAPSE_PREVIEW_SAFE_MODE", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        return PreviewSafeOptimizationRepository()
+
     url = os.getenv("SUPABASE_URL", "").strip()
     secret_key = (
         os.getenv("SUPABASE_SECRET_KEY", "").strip()

@@ -32,6 +32,13 @@ from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_
 
 from .repository import repository
 
+PREVIEW_SAFE_MODE = os.getenv("GRIDSYNAPSE_PREVIEW_SAFE_MODE", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
 OPTIMIZATION_REQUESTS = Counter(
     "gridsynapse_optimization_requests_total",
     "Optimization requests by final status",
@@ -71,7 +78,7 @@ app.add_middleware(
 
 scenario_store = ScenarioStore()
 live_market_service = LiveMarketScenarioService(scenario_store)
-procurement_service = ProcurementService()
+procurement_service = ProcurementService(execution_enabled=False if PREVIEW_SAFE_MODE else None)
 
 
 def _get_recommendation(recommendation_id: str):
@@ -87,12 +94,14 @@ def health() -> dict:
         "status": "healthy",
         "service": "gridsynapse-api",
         "version": "2.0.0",
+        "previewSafeMode": PREVIEW_SAFE_MODE,
         "persistence": repository.status(),
         "procurement": {
             "enabled": procurement_service.procurement_enabled,
             "mode": "portfolio_dry_run",
             "executionEnabled": procurement_service.execution_enabled,
             "liveProviderCallsAvailable": False,
+            "durableWritesEnabled": repository.status().get("durable", False),
         },
     }
 
