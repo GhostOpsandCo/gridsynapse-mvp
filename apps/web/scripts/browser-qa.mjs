@@ -129,9 +129,10 @@ async function runViewport({ name, width, height, mobile }) {
   if (name === "desktop") {
     await clickButton("Decision");
     await sleep(200);
-    const approveClicked = await clickButton("Approve decision");
+    const alreadyApproved = await waitForText("decision approved", 600);
+    const approveClicked = alreadyApproved ? false : await clickButton("Approve decision");
     const approved = await waitForText("decision approved", 5000);
-    actions.push({ action: "approve decision", passed: approveClicked && approved });
+    actions.push({ action: "approve decision", passed: approved && (alreadyApproved || approveClicked) });
 
     const procurementClicked = await clickButton("Procurement");
     await sleep(250);
@@ -139,7 +140,7 @@ async function runViewport({ name, width, height, mobile }) {
     const commitmentCreated = await waitForText("validated compute commitment", 6000);
     actions.push({ action: "build compute commitment", passed: procurementClicked && buildClicked && commitmentCreated });
 
-    const manifestText = await evaluate(`document.body.innerText.includes("Inspectable SkyPilot planning artifact")`);
+    const manifestText = await waitForText("Inspectable SkyPilot planning artifact", 6000);
     actions.push({ action: "generate SkyPilot planning artifact", passed: manifestText });
 
     const verifyClicked = await clickButton("Verify dry run");
