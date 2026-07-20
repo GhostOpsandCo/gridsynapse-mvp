@@ -6,6 +6,9 @@ import type {
   LiveMarketSnapshot,
   OptimizationRequest,
   OptimizationResult,
+  ProcurementAction,
+  ProcurementPlan,
+  ExecutableWorkloadSpec,
 } from "./types";
 
 export const API_URL =
@@ -49,6 +52,37 @@ export const api = {
     request<OptimizationResult>(`/api/v2/optimizations/${id}/approval`, {
       method: "POST",
       body: JSON.stringify({ status, actor: "operator@gridsynapse.io" }),
+    }),
+  createProcurementPlan: (body: {
+    recommendationId: string;
+    expectedInputHash: string;
+    requestedBy: string;
+    maxSpendUsd: number;
+    workloadSpecs: ExecutableWorkloadSpec[];
+  }) =>
+    request<ProcurementPlan>("/api/v2/procurement/plans", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  procurementPlan: (id: string) =>
+    request<ProcurementPlan>(`/api/v2/procurement/plans/${id}`),
+  verifyProcurementPlan: (id: string) =>
+    request<ProcurementPlan>(`/api/v2/procurement/plans/${id}/verify`, {
+      method: "POST",
+    }),
+  transitionProcurementPlan: (
+    id: string,
+    action: ProcurementAction,
+    simulatedActualCostUsd?: number,
+  ) =>
+    request<ProcurementPlan>(`/api/v2/procurement/plans/${id}/transitions`, {
+      method: "POST",
+      body: JSON.stringify({
+        action,
+        actor: "portfolio-operator@gridsynapse.io",
+        simulation: true,
+        simulatedActualCostUsd,
+      }),
     }),
   exportUrl: (id: string, format: "json" | "csv") =>
     `${API_URL}/api/v2/optimizations/${id}/export?format=${format}`,

@@ -15,9 +15,19 @@ from gridsynapse_contracts import (
     Explanation,
     OptimizationRequest,
     OptimizationResult,
+    ProcurementCreateRequest,
+    ProcurementPlan,
+    ProcurementTransitionRequest,
 )
 from gridsynapse_explanations import explain_result
 from gridsynapse_optimizer import optimize
+from gridsynapse_procurement import (
+    InvalidProcurementPlanError,
+    ProcurementDisabledError,
+    ProcurementNotFoundError,
+    ProcurementService,
+    ProcurementTransitionError,
+)
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 from .repository import repository
@@ -61,6 +71,7 @@ app.add_middleware(
 
 scenario_store = ScenarioStore()
 live_market_service = LiveMarketScenarioService(scenario_store)
+procurement_service = ProcurementService()
 
 
 def _get_recommendation(recommendation_id: str):
@@ -77,6 +88,12 @@ def health() -> dict:
         "service": "gridsynapse-api",
         "version": "2.0.0",
         "persistence": repository.status(),
+        "procurement": {
+            "enabled": procurement_service.procurement_enabled,
+            "mode": "portfolio_dry_run",
+            "executionEnabled": procurement_service.execution_enabled,
+            "liveProviderCallsAvailable": False,
+        },
     }
 
 
@@ -197,6 +214,61 @@ def update_approval(
         actor=update.actor,
     )
     return result
+
+
+@app.post("/api/v2/procurement/plans", response_model=ProcurementPlan)
+def create_procurement_plan(create: ProcurementCreateRequest) -> ProcurementPlan:
+    request, result = _get_recommendation(create.recommendation_id)
+    try:
+        return procurement_service.create_plan(request, result, create)
+    except ProcurementDisabledError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except InvalidProcurementPlanError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.get(
+    "/api/v2/procurement/plans/{procurement_plan_id}",
+    response_model=ProcurementPlan,
+)
+def get_procurement_plan(procurement_plan_id: str) -> ProcurementPlan:
+    try:
+        return procurement_service.get_plan(procurement_plan_id)
+    except ProcurementDisabledError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ProcurementNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Procurement plan not found") from error
+
+
+@app.post(
+    "/api/v2/procurement/plans/{procurement_plan_id}/verify",
+    response_model=ProcurementPlan,
+)
+def verify_procurement_plan(procurement_plan_id: str) -> ProcurementPlan:
+    try:
+        return procurement_service.verify_plan(procurement_plan_id)
+    except ProcurementDisabledError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ProcurementNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Procurement plan not found") from error
+
+
+@app.post(
+    "/api/v2/procurement/plans/{procurement_plan_id}/transitions",
+    response_model=ProcurementPlan,
+)
+def transition_procurement_plan(
+    procurement_plan_id: str,
+    transition: ProcurementTransitionRequest,
+) -> ProcurementPlan:
+    try:
+        return procurement_service.transition_plan(procurement_plan_id, transition)
+    except ProcurementDisabledError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ProcurementNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Procurement plan not found") from error
+    except ProcurementTransitionError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
 
 @app.get("/api/v2/optimizations/{recommendation_id}/export")

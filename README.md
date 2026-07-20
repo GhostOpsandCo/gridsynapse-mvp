@@ -1,6 +1,6 @@
 # GridSynapse v2
 
-GridSynapse is an operator-facing AI compute optimization console. It evaluates where and when queued GPU workloads can run across eligible resource pools, then produces a validated recommendation with explicit cost, carbon, delay, and capacity-risk tradeoffs.
+GridSynapse is a buyer-side AI compute procurement control plane. It evaluates where and when queued GPU workloads can run, turns the selected placement into an approval-grade compute commitment, generates an inspectable SkyPilot planning artifact, and records the outcome for reconciliation.
 
 This repository contains a working product foundation, not a marketing-only dashboard:
 
@@ -11,19 +11,22 @@ This repository contains a working product foundation, not a marketing-only dash
 - no-key live adapters for SkyPilot's public GPU catalog and the official NESO GB carbon forecast;
 - a FastAPI service with explanations, approvals, exports, and metrics;
 - optional Supabase persistence for recommendations, reviews, and decision history;
-- a Next.js operator workflow for reviewing and acting on recommendations;
+- typed procurement plans, offer snapshots, verification records, and reconciliation receipts;
+- inspectable SkyPilot manifests and a complete zero-spend lifecycle simulation;
+- a Next.js operator workflow organized as Queue, Decision, Procurement, Runs, and Outcomes;
 - reproducible reference evidence and a fixed solver-latency benchmark.
 
 ![GridSynapse operator console](docs/assets/operator-console.png)
 
 ## What The Product Demonstrates
 
-1. **Observe the queue.** Review workloads, GPU demand, time windows, resource capacity, and source freshness.
-2. **Set an operating objective.** Compare Cost, Balanced, Carbon, and SLA profiles without changing hard workload constraints.
-3. **Optimize.** CP-SAT selects one feasible placement per workload while enforcing GPU type, region, latency, budget, deadline, and slot-capacity limits.
-4. **Validate independently.** A separate validator checks the request hash, every placement, and aggregate capacity before the recommendation can be reviewed.
-5. **Explain the tradeoff.** The explanation layer cites only calculated plan values and scenario facts.
-6. **Keep a human in control.** Operators approve or request revision; GridSynapse does not execute infrastructure changes.
+1. **Queue.** See what must run, when it is due, and the hard constraints GridSynapse must protect.
+2. **Decision.** Compare validated placement options using current public price evidence and clearly labeled modeled capacity.
+3. **Procurement.** Approve one exact input hash, create a spend-capped compute commitment, generate its SkyPilot manifest, and verify every safety check.
+4. **Runs.** Exercise provisioning, running, and completion states through a deterministic zero-spend simulation.
+5. **Outcomes.** Reconcile the approved estimate against a simulated actual and retain the decision evidence.
+
+The portfolio build never contacts a provider, reserves inventory, or creates a billable resource. It proves the workflow and activation boundary without pretending public catalog prices are executable quotes.
 
 ## Live Market Inputs
 
@@ -64,9 +67,14 @@ FastAPI workflow API (services/api)
       |                |
       v                v
 typed adapters     grounded explanations
-      |
-      v
+      |                    |
+      v                    v
 contracts -> baseline -> CP-SAT optimizer -> independent validator
+                                                |
+                                                v
+                          approved compute commitment
+                         -> SkyPilot manifest -> verification
+                         -> simulated lifecycle -> reconciliation
 ```
 
 The optimizer is deterministic for a fixed request: one solver worker, a fixed seed, stable candidate ordering, and canonical input hashing. The API uses Supabase when backend credentials are configured and falls back to process memory for local evaluation. The console makes the active persistence mode visible so an operator is never led to believe a session-only review was stored durably.
@@ -136,6 +144,10 @@ Equivalent shortcuts are available as `make v2-api`, `make v2-web`, and `make v2
 | `POST` | `/api/v2/optimizations/{id}/approval` | Approve or request revision |
 | `GET` | `/api/v2/optimizations/{id}/export` | JSON or CSV evidence export |
 | `GET` | `/api/v2/decision-history` | Recent recommendations and operator review states |
+| `POST` | `/api/v2/procurement/plans` | Create a spend-capped commitment from an approved recommendation |
+| `GET` | `/api/v2/procurement/plans/{id}` | Read the commitment, manifest, and current lifecycle state |
+| `POST` | `/api/v2/procurement/plans/{id}/verify` | Verify hashes, evidence freshness, spend, approval, and execution locks |
+| `POST` | `/api/v2/procurement/plans/{id}/transitions` | Exercise simulation-only lifecycle and reconciliation transitions |
 
 ## Verification
 
@@ -162,11 +174,12 @@ This starts the API on port `8080` and the operator console on port `3020`.
 ## Boundaries
 
 - Checked-in reference inputs are synthetic and labeled as such; the live market endpoint identifies every input at the metric level.
-- GridSynapse recommends placements; it does not provision or migrate workloads.
+- Portfolio mode generates executable-format manifests but does not provision or migrate workloads.
 - Carbon values depend on the supplied intensity data and are reported as estimates.
 - Price, latency, availability, and capacity are only as trustworthy as their source metadata.
 - Approval is human-controlled, and any input change should invalidate a prior decision in a production implementation.
-- Durable identity, RBAC, credentialed inventory adapters, and execution integrations remain future production work. Supabase persistence covers recommendation and review history when configured; it is not a substitute for user identity or authorization.
+- Procurement plans and lifecycle transitions are session-scoped in the portfolio API; recommendation and approval history can be persisted to Supabase.
+- Paid execution remains structurally disabled. Activation requires credentialed provider access, account-specific price and inventory checks, durable procurement storage, RBAC, approval policy, a backend spend ceiling, and an authorized provider adapter. See [`docs/v2/PROVIDER_ACTIVATION.md`](docs/v2/PROVIDER_ACTIVATION.md).
 
 ## Legacy Reference
 

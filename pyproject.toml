@@ -23,6 +23,7 @@ where = [
   "packages/optimizer",
   "packages/adapters",
   "packages/explanations",
+  "packages/procurement",
   "services/api",
 ]
 include = [
@@ -30,6 +31,7 @@ include = [
   "gridsynapse_optimizer*",
   "gridsynapse_adapters*",
   "gridsynapse_explanations*",
+  "gridsynapse_procurement*",
   "app*",
 ]
 
@@ -49,6 +51,7 @@ pythonpath = [
   "packages/optimizer",
   "packages/adapters",
   "packages/explanations",
+  "packages/procurement",
   "services/api",
 ]
 
@@ -69,5 +72,6 @@ source = [
   "packages/optimizer",
   "packages/adapters",
   "packages/explanations",
+  "packages/procurement",
   "services/api",
 ]

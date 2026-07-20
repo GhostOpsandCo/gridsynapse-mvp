@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from enum import StrEnum
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
@@ -231,6 +232,148 @@ class OptimizationResult(ContractModel):
     infeasible_reasons: list[str] = Field(default_factory=list)
     validation: ValidationSummary
     approval: ApprovalState
+
+
+class OfferSnapshot(ContractModel):
+    offer_id: str
+    provider: str
+    pool_id: str
+    region: str
+    gpu_type: str
+    price_usd_per_gpu_hour: Annotated[float, Field(ge=0)]
+    currency: Literal["USD"] = "USD"
+    price_classification: Literal["planning_only", "account_specific_quote"]
+    inventory_classification: Literal[
+        "modeled_not_executable",
+        "verified_executable",
+    ]
+    price_evidence: DataSourceRef
+    capacity_evidence: DataSourceRef
+    captured_at: datetime
+    executable_inventory: bool = False
+    evidence_notes: list[str] = Field(default_factory=list)
+
+
+class ExecutableWorkloadSpec(ContractModel):
+    workload_id: str
+    container_image: Annotated[str, Field(min_length=1)]
+    command: Annotated[list[str], Field(min_length=1)]
+    working_directory: str | None = None
+    environment: dict[str, str] = Field(default_factory=dict)
+    secret_refs: list[str] = Field(default_factory=list)
+    storage_mounts: dict[str, str] = Field(default_factory=dict)
+    checkpoint_uri: str | None = None
+    retry_limit: Annotated[int, Field(ge=0, le=10)] = 0
+    cleanup_policy: Literal["delete_compute", "retain_storage"] = "delete_compute"
+
+
+class ProcurementPlacement(ContractModel):
+    placement_id: str
+    workload_id: str
+    pool_id: str
+    provider: str
+    region: str
+    gpu_type: str
+    gpu_count: Annotated[int, Field(ge=1)]
+    start: datetime
+    end: datetime
+    estimated_cost_usd: Annotated[float, Field(ge=0)]
+    workload_spec: ExecutableWorkloadSpec
+    offer: OfferSnapshot
+    skypilot_task_yaml: str
+
+
+class VerificationCheck(ContractModel):
+    check_id: str
+    passed: bool
+    severity: Literal["blocking", "warning", "information"]
+    message: str
+
+
+class VerificationRecord(ContractModel):
+    verification_id: str
+    procurement_plan_id: str
+    verified_at: datetime
+    valid_for_dry_run: bool
+    live_launch_allowed: bool = False
+    mode: Literal["portfolio_dry_run"] = "portfolio_dry_run"
+    checks: list[VerificationCheck]
+    blocking_reasons: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    evidence_hash: str
+
+
+class ProcurementStatus(StrEnum):
+    CREATED = "created"
+    VERIFICATION_FAILED = "verification_failed"
+    DRY_RUN_READY = "dry_run_ready"
+    APPROVED_FOR_LAUNCH = "approved_for_launch"
+    PROVISIONING = "provisioning"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    RECONCILED = "reconciled"
+
+
+class ReconciliationReport(ContractModel):
+    reconciliation_id: str
+    procurement_plan_id: str
+    estimated_total_cost_usd: Annotated[float, Field(ge=0)]
+    simulated_actual_cost_usd: Annotated[float, Field(ge=0)]
+    variance_usd: float
+    variance_percent: float | None
+    workload_count: Annotated[int, Field(ge=0)]
+    completed_workload_count: Annotated[int, Field(ge=0)]
+    provenance: Literal["deterministic_portfolio_simulation"] = "deterministic_portfolio_simulation"
+    methodology: str
+    reconciled_at: datetime
+
+
+class ProcurementPlan(ContractModel):
+    schema_version: Literal["gridsynapse-procurement-plan-v1"]
+    procurement_plan_id: str
+    recommendation_id: str
+    scenario_id: str
+    input_hash: str
+    idempotency_key: str
+    mode: Literal["portfolio_dry_run"] = "portfolio_dry_run"
+    status: ProcurementStatus
+    requested_by: str
+    max_spend_usd: Annotated[float, Field(gt=0)]
+    estimated_total_cost_usd: Annotated[float, Field(ge=0)]
+    currency: Literal["USD"] = "USD"
+    placements: Annotated[list[ProcurementPlacement], Field(min_length=1)]
+    skypilot_manifest_yaml: str
+    verification: VerificationRecord | None = None
+    reconciliation: ReconciliationReport | None = None
+    simulation_only: Literal[True] = True
+    live_execution_permitted: Literal[False] = False
+    provider_credentials_present: Literal[False] = False
+    execution_boundary: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProcurementCreateRequest(ContractModel):
+    recommendation_id: str
+    expected_input_hash: str
+    requested_by: str
+    max_spend_usd: Annotated[float, Field(gt=0)]
+    workload_specs: Annotated[list[ExecutableWorkloadSpec], Field(min_length=1)]
+
+
+class ProcurementAction(StrEnum):
+    APPROVE_FOR_LAUNCH = "approve_for_launch"
+    START_PROVISIONING = "start_provisioning"
+    MARK_RUNNING = "mark_running"
+    MARK_COMPLETED = "mark_completed"
+    RECONCILE = "reconcile"
+
+
+class ProcurementTransitionRequest(ContractModel):
+    action: ProcurementAction
+    actor: str
+    simulation: bool = False
+    simulated_actual_cost_usd: Annotated[float, Field(ge=0)] | None = None
 
 
 class Explanation(ContractModel):

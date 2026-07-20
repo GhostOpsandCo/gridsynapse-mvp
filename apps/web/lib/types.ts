@@ -185,6 +185,134 @@ export interface HealthResponse {
   service: string;
   version: string;
   persistence: PersistenceStatus;
+  procurement?: {
+    enabled: boolean;
+    mode: "portfolio_dry_run";
+    executionEnabled: boolean;
+    liveProviderCallsAvailable: false;
+  };
+}
+
+export interface ExecutableWorkloadSpec {
+  workloadId: string;
+  containerImage: string;
+  command: string[];
+  workingDirectory: string | null;
+  environment: Record<string, string>;
+  secretRefs: string[];
+  storageMounts: Record<string, string>;
+  checkpointUri: string | null;
+  retryLimit: number;
+  cleanupPolicy: "delete_compute" | "retain_storage";
+}
+
+export interface OfferSnapshot {
+  offerId: string;
+  provider: string;
+  poolId: string;
+  region: string;
+  gpuType: string;
+  priceUsdPerGpuHour: number;
+  currency: "USD";
+  priceClassification: "planning_only" | "account_specific_quote";
+  inventoryClassification: "modeled_not_executable" | "verified_executable";
+  priceEvidence: SourceRef;
+  capacityEvidence: SourceRef;
+  capturedAt: string;
+  executableInventory: boolean;
+  evidenceNotes: string[];
+}
+
+export interface VerificationCheck {
+  checkId: string;
+  passed: boolean;
+  severity: "blocking" | "warning" | "information";
+  message: string;
+}
+
+export interface VerificationRecord {
+  verificationId: string;
+  procurementPlanId: string;
+  verifiedAt: string;
+  validForDryRun: boolean;
+  liveLaunchAllowed: false;
+  mode: "portfolio_dry_run";
+  checks: VerificationCheck[];
+  blockingReasons: string[];
+  warnings: string[];
+  evidenceHash: string;
+}
+
+export type ProcurementStatus =
+  | "created"
+  | "verification_failed"
+  | "dry_run_ready"
+  | "approved_for_launch"
+  | "provisioning"
+  | "running"
+  | "completed"
+  | "reconciled";
+
+export type ProcurementAction =
+  | "approve_for_launch"
+  | "start_provisioning"
+  | "mark_running"
+  | "mark_completed"
+  | "reconcile";
+
+export interface ProcurementPlacement {
+  placementId: string;
+  workloadId: string;
+  poolId: string;
+  provider: string;
+  region: string;
+  gpuType: string;
+  gpuCount: number;
+  start: string;
+  end: string;
+  estimatedCostUsd: number;
+  workloadSpec: ExecutableWorkloadSpec;
+  offer: OfferSnapshot;
+  skypilotTaskYaml: string;
+}
+
+export interface ReconciliationReport {
+  reconciliationId: string;
+  procurementPlanId: string;
+  estimatedTotalCostUsd: number;
+  simulatedActualCostUsd: number;
+  varianceUsd: number;
+  variancePercent: number | null;
+  workloadCount: number;
+  completedWorkloadCount: number;
+  provenance: "deterministic_portfolio_simulation";
+  methodology: string;
+  reconciledAt: string;
+}
+
+export interface ProcurementPlan {
+  schemaVersion: "gridsynapse-procurement-plan-v1";
+  procurementPlanId: string;
+  recommendationId: string;
+  scenarioId: string;
+  inputHash: string;
+  idempotencyKey: string;
+  mode: "portfolio_dry_run";
+  status: ProcurementStatus;
+  requestedBy: string;
+  maxSpendUsd: number;
+  estimatedTotalCostUsd: number;
+  currency: "USD";
+  placements: ProcurementPlacement[];
+  skypilotManifestYaml: string;
+  verification: VerificationRecord | null;
+  reconciliation: ReconciliationReport | null;
+  simulationOnly: true;
+  liveExecutionPermitted: false;
+  providerCredentialsPresent: false;
+  executionBoundary: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DecisionHistoryItem {
