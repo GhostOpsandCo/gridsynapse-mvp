@@ -725,7 +725,7 @@ export function OperatorConsole() {
       <aside className="sidebar">
         <button className="brand" onClick={() => setActiveView("queue")} type="button"><span className="brand-mark"><Boxes size={21} /></span><span><strong>GridSynapse</strong><small>Compute Procurement</small></span></button>
         <nav aria-label="Product areas">{navItems.map((item) => <button className={activeView === item.id ? "is-active" : ""} key={item.id} onClick={() => setActiveView(item.id)} type="button">{item.icon}<span>{item.label}</span></button>)}</nav>
-        <div className="sidebar__footer"><span className={persistence?.durable ? "environment-dot" : "environment-dot environment-dot--amber"} /><div><strong>{persistence?.durable ? "Decision records durable" : "Session records only"}</strong><small>{persistence?.durable ? "Supabase-backed approvals and history" : "Connect Supabase for durable records"}</small></div></div>
+        <div className="sidebar__footer"><span className={persistence?.durable ? "environment-dot" : "environment-dot environment-dot--amber"} /><div><strong>{persistence?.durable ? "Decision records durable" : persistence?.previewSafeMode ? "Preview Safe Mode" : "Session records only"}</strong><small>{persistence?.durable ? "Supabase-backed approvals and history" : persistence?.previewSafeMode ? "Session-only; durable writes and execution disabled" : "Connect Supabase for durable records"}</small></div></div>
       </aside>
 
       <main className="workspace">

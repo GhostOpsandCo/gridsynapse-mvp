@@ -22,7 +22,7 @@ help:
 	@echo "  make v2-docker-up - Run the isolated v2 stack with Docker Compose"
 
 # GridSynapse v2 commands are isolated from the legacy MVP targets above.
-V2_PYTHONPATH=packages/contracts:packages/optimizer:packages/adapters:packages/explanations:services/api
+V2_PYTHONPATH=packages/contracts:packages/optimizer:packages/adapters:packages/explanations:packages/procurement:services/api
 V2_VENV?=.venv
 
 v2-install:

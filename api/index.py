@@ -9,6 +9,7 @@ for package_root in (
     ROOT / "packages" / "optimizer",
     ROOT / "packages" / "adapters",
     ROOT / "packages" / "explanations",
+    ROOT / "packages" / "procurement",
     ROOT / "services" / "api",
 ):
     sys.path.insert(0, str(package_root))

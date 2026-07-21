@@ -79,6 +79,23 @@ contracts -> baseline -> CP-SAT optimizer -> independent validator
 
 The optimizer is deterministic for a fixed request: one solver worker, a fixed seed, stable candidate ordering, and canonical input hashing. The API uses Supabase when backend credentials are configured and falls back to process memory for local evaluation. The console makes the active persistence mode visible so an operator is never led to believe a session-only review was stored durably.
 
+### Preview Safe Mode
+
+Commit-linked previews must not share durable writes with production. Set these variables in
+the Vercel Preview environment or any temporary review runtime:
+
+```bash
+GRIDSYNAPSE_PREVIEW_SAFE_MODE=true
+GRIDSYNAPSE_EXECUTION_ENABLED=false
+```
+
+Preview Safe Mode ignores Supabase credentials even if they are present, keeps recommendations,
+approvals, and procurement workflow state inside the API process, and forces provider execution
+off. Public catalog and demo scenario reads remain available. The `/health` response reports
+`previewSafeMode: true`, `durableWritesEnabled: false`, and `executionEnabled: false` so the
+boundary can be verified without trusting configuration. Production behavior is unchanged when
+`GRIDSYNAPSE_PREVIEW_SAFE_MODE` is false or unset.
+
 ## Durable Decision History
 
 Apply [`supabase/migrations/202607180001_gridsynapse_persistence.sql`](supabase/migrations/202607180001_gridsynapse_persistence.sql) to a dedicated Supabase project, then configure the API with backend-only credentials:
@@ -109,7 +126,7 @@ cd apps/web && npm ci
 Run the API from the repository root:
 
 ```bash
-PYTHONPATH=packages/contracts:packages/optimizer:packages/adapters:packages/explanations:services/api \
+PYTHONPATH=packages/contracts:packages/optimizer:packages/adapters:packages/explanations:packages/procurement:services/api \
   .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
 ```
 

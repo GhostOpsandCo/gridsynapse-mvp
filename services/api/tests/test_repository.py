@@ -4,7 +4,11 @@ import json
 from urllib.parse import parse_qs
 
 import httpx
-from app.repository import SupabaseOptimizationRepository
+from app.repository import (
+    PreviewSafeOptimizationRepository,
+    SupabaseOptimizationRepository,
+    build_repository,
+)
 from gridsynapse_adapters import ScenarioStore
 from gridsynapse_optimizer import optimize
 
@@ -82,3 +86,40 @@ def test_supabase_repository_round_trip_and_history():
     assert authorized_requests == 5
 
     repository.client.close()
+
+
+def test_preview_safe_mode_ignores_supabase_credentials(monkeypatch):
+    monkeypatch.setenv("GRIDSYNAPSE_PREVIEW_SAFE_MODE", "true")
+    monkeypatch.setenv("SUPABASE_URL", "https://production-project.supabase.co")
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "must-not-be-used")
+
+    repository = build_repository()
+
+    assert isinstance(repository, PreviewSafeOptimizationRepository)
+    assert repository.status() == {
+        "backend": "preview_session",
+        "durable": False,
+        "previewSafeMode": True,
+        "durableWritesEnabled": False,
+        "writePolicy": "session_only",
+        "detail": (
+            "Preview Safe Mode keeps recommendations and reviews in this API session. "
+            "Supabase writes and provider execution are disabled."
+        ),
+    }
+
+
+def test_preview_safe_mode_supports_session_workflow_without_durable_writes(monkeypatch):
+    monkeypatch.setenv("GRIDSYNAPSE_PREVIEW_SAFE_MODE", "true")
+    monkeypatch.setenv("SUPABASE_URL", "https://production-project.supabase.co")
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "must-not-be-used")
+    repository = build_repository()
+    request = ScenarioStore().get("reference-cost-carbon-tradeoff-v1")
+    result = optimize(request)
+
+    repository.save(request, result, event_type="preview_recommendation_created")
+    stored_request, stored_result = repository.get(result.recommendation_id)
+
+    assert stored_request.scenario_id == request.scenario_id
+    assert stored_result.recommendation_id == result.recommendation_id
+    assert repository.status()["durableWritesEnabled"] is False
