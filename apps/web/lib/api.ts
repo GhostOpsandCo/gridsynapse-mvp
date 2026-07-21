@@ -11,8 +11,7 @@ import type {
   ExecutableWorkloadSpec,
 } from "./types";
 
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "/api/proxy";
+export const API_URL = "/api/proxy";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {

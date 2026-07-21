@@ -12,6 +12,7 @@ from gridsynapse_contracts import (
 )
 from gridsynapse_optimizer import optimize
 from gridsynapse_procurement import (
+    InMemoryProcurementPlanStore,
     InvalidProcurementPlanError,
     ProcurementService,
     ProcurementTransitionError,
@@ -220,3 +221,21 @@ def test_environment_defaults_enable_dry_run_and_disable_execution(monkeypatch):
 
     assert service.procurement_enabled is True
     assert service.execution_enabled is False
+
+
+def test_shared_store_preserves_plan_across_service_instances(reference_request):
+    result = _approved_result(reference_request)
+    store = InMemoryProcurementPlanStore()
+    first_service = ProcurementService(now=lambda: NOW, store=store)
+    plan = first_service.create_plan(
+        reference_request,
+        result,
+        _create_request(result, reference_request),
+    )
+
+    restarted_service = ProcurementService(now=lambda: NOW, store=store)
+    restored = restarted_service.get_plan(plan.procurement_plan_id)
+    verified = restarted_service.verify_plan(plan.procurement_plan_id)
+
+    assert restored == plan
+    assert verified.status == ProcurementStatus.DRY_RUN_READY

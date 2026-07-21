@@ -3,10 +3,13 @@ from __future__ import annotations
 import csv
 import io
 import os
+import secrets
 import time
+from collections import defaultdict, deque
 from datetime import UTC, datetime
+from threading import Lock
 
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from gridsynapse_adapters import LiveMarketScenarioService, ScenarioStore
@@ -30,6 +33,7 @@ from gridsynapse_procurement import (
 )
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
+from .procurement_repository import procurement_plan_store
 from .repository import repository
 
 PREVIEW_SAFE_MODE = os.getenv("GRIDSYNAPSE_PREVIEW_SAFE_MODE", "false").strip().lower() in {
@@ -38,6 +42,16 @@ PREVIEW_SAFE_MODE = os.getenv("GRIDSYNAPSE_PREVIEW_SAFE_MODE", "false").strip().
     "yes",
     "on",
 }
+API_WRITE_KEY = os.getenv("GRIDSYNAPSE_API_WRITE_KEY", "").strip()
+WRITE_AUTH_REQUIRED = os.getenv("VERCEL_ENV", "").strip().lower() == "production" or bool(
+    API_WRITE_KEY
+)
+WRITE_RATE_LIMIT_PER_MINUTE = max(
+    1,
+    int(os.getenv("GRIDSYNAPSE_WRITE_RATE_LIMIT_PER_MINUTE", "120")),
+)
+_write_request_times: dict[str, deque[float]] = defaultdict(deque)
+_write_rate_lock = Lock()
 
 OPTIMIZATION_REQUESTS = Counter(
     "gridsynapse_optimization_requests_total",
@@ -78,7 +92,43 @@ app.add_middleware(
 
 scenario_store = ScenarioStore()
 live_market_service = LiveMarketScenarioService(scenario_store)
-procurement_service = ProcurementService(execution_enabled=False if PREVIEW_SAFE_MODE else None)
+procurement_service = ProcurementService(
+    execution_enabled=False if PREVIEW_SAFE_MODE else None,
+    store=procurement_plan_store,
+)
+
+
+@app.middleware("http")
+async def protect_write_routes(request: Request, call_next):
+    is_write = request.method in {"POST", "PUT", "PATCH", "DELETE"}
+    if not is_write or not request.url.path.startswith("/api/v2/"):
+        return await call_next(request)
+
+    if WRITE_AUTH_REQUIRED:
+        supplied_key = request.headers.get("x-gridsynapse-api-key", "")
+        if not API_WRITE_KEY:
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Production write access is not configured"},
+            )
+        if not secrets.compare_digest(supplied_key, API_WRITE_KEY):
+            return JSONResponse(status_code=401, content={"detail": "Write authorization required"})
+
+    now = time.monotonic()
+    forwarded_for = request.headers.get("x-forwarded-for", "local-session").split(",", 1)[0]
+    bucket_key = f"{request.headers.get('x-gridsynapse-api-key', 'local-session')}:{forwarded_for}"
+    with _write_rate_lock:
+        bucket = _write_request_times[bucket_key]
+        while bucket and now - bucket[0] >= 60:
+            bucket.popleft()
+        if len(bucket) >= WRITE_RATE_LIMIT_PER_MINUTE:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Write rate limit exceeded; retry in one minute"},
+                headers={"Retry-After": "60"},
+            )
+        bucket.append(now)
+    return await call_next(request)
 
 
 def _get_recommendation(recommendation_id: str):
@@ -102,6 +152,8 @@ def health() -> dict:
             "executionEnabled": procurement_service.execution_enabled,
             "liveProviderCallsAvailable": False,
             "durableWritesEnabled": repository.status().get("durable", False),
+            "planPersistence": procurement_service.store.status(),
+            "writeAuthRequired": WRITE_AUTH_REQUIRED,
         },
     }
 

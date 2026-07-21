@@ -9,6 +9,7 @@ on:
       - "tests/v2/**"
       - "scripts/**"
       - "data/scenarios/**"
+      - "supabase/**"
       - "pyproject.toml"
       - ".github/workflows/v2-ci.yml"
   push:
@@ -20,6 +21,7 @@ on:
       - "tests/v2/**"
       - "scripts/**"
       - "data/scenarios/**"
+      - "supabase/**"
       - "pyproject.toml"
       - ".github/workflows/v2-ci.yml"
 

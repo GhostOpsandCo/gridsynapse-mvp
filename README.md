@@ -77,7 +77,7 @@ contracts -> baseline -> CP-SAT optimizer -> independent validator
                          -> simulated lifecycle -> reconciliation
 ```
 
-The optimizer is deterministic for a fixed request: one solver worker, a fixed seed, stable candidate ordering, and canonical input hashing. The API uses Supabase when backend credentials are configured and falls back to process memory for local evaluation. The console makes the active persistence mode visible so an operator is never led to believe a session-only review was stored durably.
+The optimizer is deterministic for a fixed request: one solver worker, a fixed seed, stable candidate ordering, and canonical input hashing. The API uses Supabase when backend credentials are configured and falls back to process memory for local evaluation. Recommendation reviews and procurement lifecycle state use durable repositories in production. The console makes the active persistence mode visible so an operator is never led to believe a session-only review was stored durably.
 
 ### Preview Safe Mode
 
@@ -98,14 +98,27 @@ boundary can be verified without trusting configuration. Production behavior is 
 
 ## Durable Decision History
 
-Apply [`supabase/migrations/202607180001_gridsynapse_persistence.sql`](supabase/migrations/202607180001_gridsynapse_persistence.sql) to a dedicated Supabase project, then configure the API with backend-only credentials:
+Apply the migrations in [`supabase/migrations`](supabase/migrations) to a dedicated Supabase project, then configure the API with backend-only credentials:
 
 ```bash
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SECRET_KEY=your-backend-secret-key
 ```
 
-The secret key must never be exposed to the browser. The migration enables row-level security, removes access for `anon` and `authenticated`, grants the backend role access to recommendation records, and limits decision events to append-only writes plus reads. Without both variables, GridSynapse runs in clearly labeled session-memory mode.
+The secret key must never be exposed to the browser. The migrations enable row-level security for recommendation records, decision events, and procurement plans. Procurement plan payloads include the context required to resume verification and simulated lifecycle transitions after a serverless cold start. Without both variables, GridSynapse runs in clearly labeled session-memory mode.
+
+### Production Write Boundary
+
+All browser traffic uses the Next.js same-origin `/api/proxy` route. Configure the same generated
+server-only value in both the web and API Vercel projects:
+
+```bash
+GRIDSYNAPSE_API_WRITE_KEY=generated-server-only-value
+```
+
+The web proxy adds the key only to server-to-server write requests. The API rejects unauthenticated
+production writes and applies a per-caller write-rate guard. Public read routes remain available for
+portfolio inspection. Never prefix this key with `NEXT_PUBLIC_` or send it to browser code.
 
 ## Quick Start
 

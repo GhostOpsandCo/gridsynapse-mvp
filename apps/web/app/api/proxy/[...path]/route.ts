@@ -30,10 +30,24 @@ async function proxy(
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) headers.set("x-forwarded-for", forwardedFor);
 
   const bypassSecret = process.env.GRIDSYNAPSE_API_BYPASS_SECRET;
   if (bypassSecret) {
     headers.set("x-vercel-protection-bypass", bypassSecret);
+  }
+
+  const writeKey = process.env.GRIDSYNAPSE_API_WRITE_KEY;
+  const isWrite = !["GET", "HEAD", "OPTIONS"].includes(request.method);
+  if (isWrite) {
+    if (!writeKey && process.env.VERCEL_ENV === "production") {
+      return Response.json(
+        { detail: "Production write access is not configured" },
+        { status: 503 },
+      );
+    }
+    if (writeKey) headers.set("x-gridsynapse-api-key", writeKey);
   }
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";

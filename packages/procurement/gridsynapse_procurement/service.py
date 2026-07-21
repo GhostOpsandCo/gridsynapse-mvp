@@ -8,7 +8,7 @@ import shlex
 from collections.abc import Callable
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import Literal, Protocol
 
 from gridsynapse_contracts import (
     DataSourceRef,
@@ -48,6 +48,78 @@ class InvalidProcurementPlanError(ValueError):
 
 class ProcurementTransitionError(ValueError):
     pass
+
+
+class ProcurementPlanStore(Protocol):
+    """Durable boundary for procurement plans and their verification context."""
+
+    def save(
+        self,
+        plan: ProcurementPlan,
+        request: OptimizationRequest,
+        result: OptimizationResult,
+        create: ProcurementCreateRequest,
+    ) -> None: ...
+
+    def get(
+        self,
+        procurement_plan_id: str,
+    ) -> tuple[
+        ProcurementPlan,
+        OptimizationRequest,
+        OptimizationResult,
+        ProcurementCreateRequest,
+    ]: ...
+
+    def status(self) -> dict: ...
+
+
+class InMemoryProcurementPlanStore:
+    def __init__(self) -> None:
+        self._records: dict[
+            str,
+            tuple[
+                ProcurementPlan,
+                OptimizationRequest,
+                OptimizationResult,
+                ProcurementCreateRequest,
+            ],
+        ] = {}
+
+    def save(
+        self,
+        plan: ProcurementPlan,
+        request: OptimizationRequest,
+        result: OptimizationResult,
+        create: ProcurementCreateRequest,
+    ) -> None:
+        self._records[plan.procurement_plan_id] = (
+            deepcopy(plan),
+            deepcopy(request),
+            deepcopy(result),
+            deepcopy(create),
+        )
+
+    def get(
+        self,
+        procurement_plan_id: str,
+    ) -> tuple[
+        ProcurementPlan,
+        OptimizationRequest,
+        OptimizationResult,
+        ProcurementCreateRequest,
+    ]:
+        try:
+            return deepcopy(self._records[procurement_plan_id])
+        except KeyError as error:
+            raise ProcurementNotFoundError(procurement_plan_id) from error
+
+    def status(self) -> dict:
+        return {
+            "backend": "memory",
+            "durable": False,
+            "detail": "Procurement plans last only for the current API process.",
+        }
 
 
 def _flag(name: str, default: bool) -> bool:
@@ -107,6 +179,7 @@ class ProcurementService:
         procurement_enabled: bool | None = None,
         execution_enabled: bool | None = None,
         now: Callable[[], datetime] | None = None,
+        store: ProcurementPlanStore | None = None,
     ) -> None:
         self.procurement_enabled = (
             _flag("GRIDSYNAPSE_PROCUREMENT_ENABLED", True)
@@ -119,11 +192,7 @@ class ProcurementService:
             else execution_enabled
         )
         self._now = now or (lambda: datetime.now(UTC))
-        self._plans: dict[str, ProcurementPlan] = {}
-        self._contexts: dict[
-            str,
-            tuple[OptimizationRequest, OptimizationResult, ProcurementCreateRequest],
-        ] = {}
+        self.store = store or InMemoryProcurementPlanStore()
 
     def create_plan(
         self,
@@ -161,8 +230,11 @@ class ProcurementService:
         }
         identity_hash = _stable_hash(identity_payload)
         plan_id = f"proc-{identity_hash[:16]}"
-        if plan_id in self._plans:
-            return deepcopy(self._plans[plan_id])
+        try:
+            stored, _, _, _ = self.store.get(plan_id)
+            return stored
+        except ProcurementNotFoundError:
+            pass
 
         now = self._now()
         pool_map = {pool.id: pool for pool in request.resource_pools}
@@ -222,21 +294,17 @@ class ProcurementService:
             created_at=now,
             updated_at=now,
         )
-        self._plans[plan_id] = deepcopy(plan)
-        self._contexts[plan_id] = (deepcopy(request), deepcopy(result), deepcopy(create))
+        self.store.save(plan, request, result, create)
         return deepcopy(plan)
 
     def get_plan(self, procurement_plan_id: str) -> ProcurementPlan:
         self._require_enabled()
-        try:
-            return deepcopy(self._plans[procurement_plan_id])
-        except KeyError as error:
-            raise ProcurementNotFoundError(procurement_plan_id) from error
+        plan, _, _, _ = self.store.get(procurement_plan_id)
+        return plan
 
     def verify_plan(self, procurement_plan_id: str) -> ProcurementPlan:
         self._require_enabled()
-        plan = self.get_plan(procurement_plan_id)
-        request, result, create = self._contexts[procurement_plan_id]
+        plan, request, result, create = self.store.get(procurement_plan_id)
         now = self._now()
         checks: list[VerificationCheck] = []
 
@@ -392,7 +460,7 @@ class ProcurementService:
             ProcurementStatus.DRY_RUN_READY if valid else ProcurementStatus.VERIFICATION_FAILED
         )
         plan.updated_at = now
-        self._plans[procurement_plan_id] = deepcopy(plan)
+        self.store.save(plan, request, result, create)
         return deepcopy(plan)
 
     def transition_plan(
@@ -401,7 +469,7 @@ class ProcurementService:
         transition: ProcurementTransitionRequest,
     ) -> ProcurementPlan:
         self._require_enabled()
-        plan = self.get_plan(procurement_plan_id)
+        plan, request, result, create = self.store.get(procurement_plan_id)
         if plan.verification is None or not plan.verification.valid_for_dry_run:
             raise ProcurementTransitionError(
                 "A valid dry-run verification is required before lifecycle simulation"
@@ -468,7 +536,7 @@ class ProcurementService:
                 reconciled_at=now,
             )
         plan.updated_at = now
-        self._plans[procurement_plan_id] = deepcopy(plan)
+        self.store.save(plan, request, result, create)
         return deepcopy(plan)
 
     def _require_enabled(self) -> None:

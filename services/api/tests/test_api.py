@@ -12,6 +12,8 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def isolated_repository(monkeypatch):
     monkeypatch.setattr(main_module, "repository", InMemoryOptimizationRepository())
+    monkeypatch.setattr(main_module, "WRITE_AUTH_REQUIRED", False)
+    main_module._write_request_times.clear()
 
 
 def _scenario():
@@ -118,3 +120,29 @@ def test_live_market_endpoint_uses_adapter_snapshot(monkeypatch):
 
     assert response.status_code == 200
     assert response.json() == expected
+
+
+def test_production_write_routes_require_server_key(monkeypatch):
+    monkeypatch.setattr(main_module, "WRITE_AUTH_REQUIRED", True)
+    monkeypatch.setattr(main_module, "API_WRITE_KEY", "server-only-key")
+
+    unauthorized = client.post("/api/v2/scenarios/validate", json=_scenario())
+    authorized = client.post(
+        "/api/v2/scenarios/validate",
+        json=_scenario(),
+        headers={"x-gridsynapse-api-key": "server-only-key"},
+    )
+
+    assert unauthorized.status_code == 401
+    assert authorized.status_code == 200
+
+
+def test_write_rate_limit_returns_429(monkeypatch):
+    monkeypatch.setattr(main_module, "WRITE_RATE_LIMIT_PER_MINUTE", 1)
+    scenario = _scenario()
+    first = client.post("/api/v2/scenarios/validate", json=scenario)
+    second = client.post("/api/v2/scenarios/validate", json=scenario)
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.headers["retry-after"] == "60"
